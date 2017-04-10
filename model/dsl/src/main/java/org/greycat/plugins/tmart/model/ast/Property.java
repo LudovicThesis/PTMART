@@ -51,4 +51,10 @@ public interface Property extends Comparable {
 
     void setGlobal();
 
+    void setContinuous();
+    boolean getContinuous();
+
+    void setMonitorSeparation();
+    boolean getMonitorSeparation();
+
 }

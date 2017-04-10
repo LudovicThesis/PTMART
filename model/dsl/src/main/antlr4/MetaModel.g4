@@ -42,9 +42,9 @@ parentsDeclr : 'extends' (TYPE_NAME|IDENT);
 //semanticFrom : 'from' STRING;
 
 //annotation : ('learned' | 'derived' | 'global');
-annotation: '@' ('Continuous' | 'MonitorSeparation');
+annotation: ('continuous' | 'monitorSeparation'); // put as with
 
 attributeType : 'String' | 'Double' | 'Long' | 'Integer' | 'Boolean' | TYPE_NAME;
-attributeDeclaration : annotation* 'att' IDENT ':' attributeType /*semanticDeclr?*/ ;
+attributeDeclaration : /*annotation**/ 'att' IDENT ':' attributeType /*semanticDeclr?*/ ('{' (annotation (',' annotation)*)? '}')?;
 
-relationDeclaration : annotation* 'rel' IDENT ':' (TYPE_NAME|IDENT) /*semanticDeclr?*/ ;
+relationDeclaration : /*annotation**/ 'rel' IDENT ':' (TYPE_NAME|IDENT) /*semanticDeclr?*/ ;

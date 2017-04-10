@@ -43,6 +43,9 @@ public abstract class PropertyImpl implements org.greycat.plugins.tmart.model.as
 
     private boolean global = false;
 
+    private boolean continuous = false;
+    private boolean monitorSeparation = false;
+
     public PropertyImpl(String name, String type) {
         this.name = name;
         this.type = type;
@@ -129,6 +132,26 @@ public abstract class PropertyImpl implements org.greycat.plugins.tmart.model.as
     @Override
     public void setGlobal() {
         global = true;
+    }
+
+    @Override
+    public void setContinuous() {
+        continuous = true;
+    }
+
+    @Override
+    public boolean getContinuous() {
+        return continuous;
+    }
+
+    @Override
+    public void setMonitorSeparation() {
+        monitorSeparation = true;
+    }
+
+    @Override
+    public boolean getMonitorSeparation() {
+        return monitorSeparation;
     }
 
     @Override

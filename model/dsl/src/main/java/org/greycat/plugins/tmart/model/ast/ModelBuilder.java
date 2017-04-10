@@ -107,7 +107,7 @@ public class ModelBuilder {
                     type = relDecl.TYPE_NAME().toString();
                 }
                 final Relation relation = new RelationImpl(name, type);
-                processAnnotations(relation, relDecl.annotation());
+                //processAnnotations(relation, relDecl.annotation());
 //                processSemanticBloc(relation, relDecl.semanticDeclr());
                 newClass.addProperty(relation);
             }
@@ -134,13 +134,16 @@ public class ModelBuilder {
             for (org.greycat.plugins.tmart.model.ast.MetaModelParser.AnnotationContext annotationContext : annotations) {
                 if (annotationContext.getText().equals("learned")) {
                     property.setLearned();
-                }
-                if (annotationContext.getText().equals("derived")) {
+                } else if (annotationContext.getText().equals("derived")) {
                     property.setDerived();
-                }
-                if (annotationContext.getText().equals("global")) {
+                } else if (annotationContext.getText().equals("global")) {
                     property.setGlobal();
+                } else if(annotationContext.getText().equals("continuous")) {
+                    property.setContinuous();
+                } else if(annotationContext.getText().equals("monitorSeparation")) {
+                    property.setMonitorSeparation();
                 }
+
             }
         }
     }
