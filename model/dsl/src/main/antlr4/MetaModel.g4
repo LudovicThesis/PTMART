@@ -20,14 +20,16 @@ enumDeclr : 'enum' (TYPE_NAME|IDENT) '{' enumLiterals '}';
 enumLiterals : IDENT (',' IDENT)*;
 classDeclr : 'class' (TYPE_NAME|IDENT) parentsDeclr? '{' (attributeDeclaration | relationDeclaration)* '}';
 parentsDeclr : 'extends' (TYPE_NAME|IDENT);
-semanticDeclr : '{' (semanticUsing | semanticFrom | semanticWith )* '}' ;
-semanticWith : 'with' IDENT (STRING|NUMBER);
-semanticUsing : 'using' STRING;
-semanticFrom : 'from' STRING;
 
-annotation : ('learned' | 'derived' | 'global');
+//semanticDeclr : '{' (semanticUsing | semanticFrom | semanticWith )* '}' ;
+//semanticWith : 'with' IDENT (STRING|NUMBER);
+//semanticUsing : 'using' STRING;
+//semanticFrom : 'from' STRING;
+
+//annotation : ('learned' | 'derived' | 'global');
+annotation: '@' ('Continuous' | 'MonitorSeparation');
 
 attributeType : 'String' | 'Double' | 'Long' | 'Integer' | 'Boolean' | TYPE_NAME;
-attributeDeclaration : annotation* 'att' IDENT ':' attributeType semanticDeclr? ;
+attributeDeclaration : annotation* 'att' IDENT ':' attributeType /*semanticDeclr?*/ ;
 
-relationDeclaration : annotation* 'rel' IDENT ':' (TYPE_NAME|IDENT) semanticDeclr? ;
+relationDeclaration : annotation* 'rel' IDENT ':' (TYPE_NAME|IDENT) /*semanticDeclr?*/ ;
