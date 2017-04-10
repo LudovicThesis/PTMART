@@ -621,6 +621,7 @@ public class Generator {
                 taskAPI.addMethod()
                         .setName("new" + classifier.name())
                         .setReturnType("greycat.Action")
+                        .setVisibility(Visibility.PUBLIC)
                         .setStatic(true)
                         .setBody("return greycat.internal.task.CoreActions.createTypedNode("+ classifier.pack() + "." + classifier.name() + ".NODE_NAME);");
 
@@ -629,31 +630,31 @@ public class Generator {
                         taskAPI.addMethod()
                                 .setName("set" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
                                 .setReturnType("greycat.Action")
-                                .setStatic(true)
                                 .setVisibility(Visibility.PUBLIC)
+                                .setStatic(true)
                                 .setBody("return greycat.internal.task.CoreActions.setAttribute("+ classifier.fqn()+ "." + property.name().toUpperCase()+"," + classifier.fqn() +"." + property.name().toUpperCase() + "_TYPE," + property.name() + " + \"\");")
                                 .addParameter(typeToClassName(property.type()),property.name());
 
                         taskAPI.addMethod()
                                 .setName("get" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
                                 .setReturnType("greycat.Action")
-                                .setStatic(true)
                                 .setVisibility(Visibility.PUBLIC)
+                                .setStatic(true)
                                 .setBody("return greycat.internal.task.CoreActions.attribute(" + classifier.fqn() + "." + property.name().toUpperCase() +");");
                     } else if(property instanceof Relation) {
                         taskAPI.addMethod()
                                 .setName("addTo" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
                                 .setReturnType("greycat.Action")
-                                .setStatic(true)
                                 .setVisibility(Visibility.PUBLIC)
+                                .setStatic(true)
                                 .setBody("return greycat.internal.task.CoreActions.addVarToRelation(" + classifier.name() +"." + property.name().toUpperCase() + ",varName);")
                                 .addParameter("String","varName");
 
                         taskAPI.addMethod()
                                 .setName("traverse" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
                                 .setReturnType("greycat.Action")
-                                .setStatic(true)
                                 .setVisibility(Visibility.PUBLIC)
+                                .setStatic(true)
                                 .setBody("return greycat.internal.task.CoreActions.traverse(" + classifier.name() +"." + property.name().toUpperCase() + ");");
                     }
                 }
