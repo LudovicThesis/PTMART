@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 The GreyCat Authors.  All rights reserved.
+ * Copyright 2017 Ludovic Mouline.  All rights reserved.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KModel {
+public interface Model {
 
     Classifier[] classifiers();
 

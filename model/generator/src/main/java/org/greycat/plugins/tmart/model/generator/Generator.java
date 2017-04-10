@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 The GreyCat Authors.  All rights reserved.
+ * Copyright 2017 Ludovic Mouline.  All rights reserved.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,18 @@
  */
 package org.greycat.plugins.tmart.model.generator;
 
-import org.jboss.forge.roaster.Roaster;
-import org.jboss.forge.roaster.model.Visibility;
-import org.jboss.forge.roaster.model.source.*;
-import org.kevoree.modeling.ast.*;
-import org.kevoree.modeling.ast.impl.Index;
-import org.kevoree.modeling.ast.impl.Model;
+
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.Type;
+import org.greycat.plugins.tmart.model.ast.*;
+import org.greycat.plugins.tmart.model.ast.Class;
+import org.greycat.plugins.tmart.model.ast.Enum;
+import org.greycat.plugins.tmart.model.ast.impl.ModelImpl;
+import org.jboss.forge.roaster.Roaster;
+import org.jboss.forge.roaster.model.Visibility;
+import org.jboss.forge.roaster.model.source.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -36,7 +38,7 @@ public class Generator {
 
     public static String extension = ".mm";
 
-    private KModel model = new Model();
+    private Model model = new ModelImpl();
 
     private List<JavaSource> sources;
 
@@ -69,9 +71,9 @@ public class Generator {
 
         sources = new ArrayList<JavaSource>();
         //Generate all NodeType
-        for (KClassifier classifier : model.classifiers()) {
-            if (classifier instanceof KEnum) {
-                KEnum loopEnum = (KEnum) classifier;
+        for (Classifier classifier : model.classifiers()) {
+            if (classifier instanceof Enum) {
+                Enum loopEnum = (Enum) classifier;
                 final JavaEnumSource javaEnum = Roaster.create(JavaEnumSource.class);
                 if (classifier.pack() != null) {
                     javaEnum.setPackage(classifier.pack());
@@ -81,9 +83,9 @@ public class Generator {
                     javaEnum.addEnumConstant(literal);
                 }
                 sources.add(javaEnum);
-            } else if (classifier instanceof KClass) {
+            } else if (classifier instanceof Class) {
                 final JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
-                KClass loopClass = (KClass) classifier;
+                Class loopClass = (Class) classifier;
                 if (classifier.pack() != null) {
                     javaClass.setPackage(classifier.pack());
                 }
@@ -112,7 +114,7 @@ public class Generator {
                         .setStringInitializer(javaClass.getCanonicalName())
                         .setStatic(true);
 
-                for (KProperty prop : loopClass.properties()) {
+                for (Property prop : loopClass.properties()) {
 
                     //add helper name
                     javaClass.addField()
@@ -123,7 +125,7 @@ public class Generator {
                             .setStringInitializer(prop.name())
                             .setStatic(true);
 
-                    if (prop instanceof KAttribute) {
+                    if (prop instanceof Attribute) {
                         javaClass.addImport(Type.class);
                         FieldSource<JavaClassSource> typeHelper = javaClass.addField()
                                 .setVisibility(Visibility.PUBLIC)
@@ -155,7 +157,7 @@ public class Generator {
                     //POJO generation
                     if (!prop.derived() && !prop.learned()) {
 
-                        if (prop instanceof KRelation) {
+                        if (prop instanceof Relation) {
                             //generate getter
                             String resultType = typeToClassName(prop.type());
                             MethodSource<JavaClassSource> getter = javaClass.addMethod();
@@ -401,8 +403,8 @@ public class Generator {
                 .addAnnotation(Override.class);
 
         StringBuilder startBodyBuilder = new StringBuilder();
-        for (KClassifier classifier : model.classifiers()) {
-            if (classifier instanceof KClass) {
+        for (Classifier classifier : model.classifiers()) {
+            if (classifier instanceof Class) {
                 String fqn = classifier.fqn();
                 startBodyBuilder.append("\t\tgraph.nodeRegistry()\n")
                         .append("\t\t\t.declaration(").append(fqn).append(".NODE_NAME").append(")").append("\n")
@@ -437,7 +439,7 @@ public class Generator {
         modelClass.addField().setName("_graph").setVisibility(Visibility.PRIVATE).setType(Graph.class).setFinal(true);
 
         //add indexes name
-        for (KClassifier classifier : model.classifiers()) {
+        for (Classifier classifier : model.classifiers()) {
             if (classifier instanceof Index) {
                 Index index = (Index) classifier;
                 modelClass.addField()
@@ -491,8 +493,8 @@ public class Generator {
                 .addParameter("Callback<Boolean>", "callback");
 
 
-        for (KClassifier classifier : model.classifiers()) {
-            if (classifier instanceof KClass) {
+        for (Classifier classifier : model.classifiers()) {
+            if (classifier instanceof Class) {
                 MethodSource<JavaClassSource> loopNewMethod = modelClass.addMethod().setName(toCamelCase("new " + classifier.name()));
                 loopNewMethod.setVisibility(Visibility.PUBLIC).setFinal(true);
                 loopNewMethod.setReturnType(classifier.fqn());
@@ -500,8 +502,8 @@ public class Generator {
                 loopNewMethod.addParameter("long", "time");
                 loopNewMethod.setBody("return (" + classifier.fqn() + ")this._graph.newTypedNode(world,time," + classifier.fqn() + ".NODE_NAME);");
             }
-            if (classifier instanceof KIndex) {
-                KIndex casted = (KIndex) classifier;
+            if (classifier instanceof Index) {
+                Index casted = (Index) classifier;
                 String resultType = casted.type().fqn();
 
                 MethodSource<JavaClassSource> loopFindMethod = modelClass.addMethod().setName(toCamelCase("find " + classifier.name()));

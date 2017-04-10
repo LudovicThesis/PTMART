@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 The GreyCat Authors.  All rights reserved.
+ * Copyright 2017 Ludovic Mouline.  All rights reserved.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,21 +32,21 @@ public class ModelBuilder {
         System.out.println(parse(new File("/Users/duke/dev/dsl/src/main/exemples/ml_1.mm")));
     }
 
-    public static KModel parse(String content) {
-        KModel model = new ModelImpl();
+    public static Model parse(String content) {
+        Model model = new ModelImpl();
         return build(new ANTLRInputStream(content), model);
     }
 
-    public static KModel parse(File content) throws Exception {
-        KModel model = new ModelImpl();
+    public static Model parse(File content) throws Exception {
+        Model model = new ModelImpl();
         return build(new ANTLRFileStream(content.getAbsolutePath()), model);
     }
 
-    public static KModel parse(File content, KModel model) throws Exception {
+    public static Model parse(File content, Model model) throws Exception {
         return build(new ANTLRFileStream(content.getAbsolutePath()), model);
     }
 
-    private static KModel build(ANTLRInputStream in, KModel model) {
+    private static Model build(ANTLRInputStream in, Model model) {
 
         BufferedTokenStream tokens = new CommonTokenStream(new org.greycat.plugins.tmart.model.ast.MetaModelLexer(in));
         org.greycat.plugins.tmart.model.ast.MetaModelParser parser = new org.greycat.plugins.tmart.model.ast.MetaModelParser(tokens);
@@ -182,7 +182,7 @@ public class ModelBuilder {
 //        }
 //    }
 
-    private static Classifier getOrAddClass(KModel model, String fqn) {
+    private static Classifier getOrAddClass(Model model, String fqn) {
         Classifier previous = model.get(fqn);
         if (previous != null) {
             return previous;
@@ -192,7 +192,7 @@ public class ModelBuilder {
         return previous;
     }
 
-    private static Classifier getOrAddIndex(KModel model, String fqn, Class clazz) {
+    private static Classifier getOrAddIndex(Model model, String fqn, Class clazz) {
         Classifier previous = model.get(fqn);
         if (previous != null) {
             return previous;
@@ -202,7 +202,7 @@ public class ModelBuilder {
         return previous;
     }
 
-    private static Classifier getOrAddEnum(KModel model, String fqn) {
+    private static Classifier getOrAddEnum(Model model, String fqn) {
         Classifier previous = model.get(fqn);
         if (previous != null) {
             return previous;

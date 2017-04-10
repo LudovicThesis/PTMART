@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 The GreyCat Authors.  All rights reserved.
+ * Copyright 2017 Ludovic Mouline.  All rights reserved.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 package org.greycat.plugins.tmart.model.ast.impl;
 
 import org.greycat.plugins.tmart.model.ast.Classifier;
-import org.greycat.plugins.tmart.model.ast.KModel;
+import org.greycat.plugins.tmart.model.ast.Model;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class ModelImpl implements KModel {
+public class ModelImpl implements Model {
 
     private final Map<String, Classifier> classifiers;
 
