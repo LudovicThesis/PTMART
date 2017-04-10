@@ -28,6 +28,7 @@
 
     <groupId>org.greycat.plugins.tmart.model</groupId>
     <artifactId>mavenplugin</artifactId>
+    <packaging>maven-plugin</packaging>
 
     <dependencies>
         <dependency>

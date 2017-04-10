@@ -20,6 +20,7 @@ import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.Type;
+import greycat.plugin.NodeFactory;
 import org.greycat.plugins.tmart.model.ast.*;
 import org.greycat.plugins.tmart.model.ast.Class;
 import org.greycat.plugins.tmart.model.ast.Enum;
@@ -91,7 +92,7 @@ public class Generator {
                 }
                 javaClass.setName(classifier.name());
 
-                String parentName = "BaseNode";
+                String parentName = "greycat.base.BaseNode";
                 if (loopClass.parent() != null) {
                     parentName = loopClass.parent().fqn();
                 }
@@ -165,11 +166,11 @@ public class Generator {
                             getter.setFinal(true);
                             getter.setReturnTypeVoid();
                             getter.setName(toCamelCase("get " + prop.name()));
-                            getter.addParameter("Callback<" + resultType + "[]>","callback");
+                            getter.addParameter("greycat.Callback<" + resultType + "[]>","callback");
                             getter.setBody(
-                                   "this.relation(" + prop.name().toUpperCase() + ",new Callback<Node[]>() {\n" +
+                                   "this.relation(" + prop.name().toUpperCase() + ",new greycat.Callback<greycat.Node[]>() {\n" +
                                            "@Override\n" +
-                                           "public void on(Node[] nodes) {\n" +
+                                           "public void on(greycat.Node[] nodes) {\n" +
                                            resultType + "[] result = new " + resultType + "[nodes.length];\n" +
                                            "for(int i=0;i<result.length;i++) {\n" +
                                            "result[i] = (" + resultType + ") nodes[i];\n" +
@@ -188,7 +189,7 @@ public class Generator {
                             add.setName(toCamelCase("addTo " + prop.name()));
                             add.setReturnType(classifier.fqn());
                             add.addParameter(typeToClassName(prop.type()), "value");
-                            bodyBuilder.append("super.addToRelation(").append(prop.name().toUpperCase()).append(",(Node)value);");
+                            bodyBuilder.append("super.addToRelation(").append(prop.name().toUpperCase()).append(",(greycat.Node)value);");
                             if(prop.parameters().get("opposite") != null) { //todo optimize
                                 String methoName = prop.parameters().get("opposite");
                                 bodyBuilder.append("value.internal_addTo")
@@ -209,7 +210,7 @@ public class Generator {
                             remove.setName(toCamelCase("removeFrom " + prop.name()));
                             remove.setReturnType(classifier.fqn());
                             remove.addParameter(typeToClassName(prop.type()), "value");
-                            bodyBuilder.append("super.removeFromRelation(").append(prop.name().toUpperCase()).append(",(Node)value);");
+                            bodyBuilder.append("super.removeFromRelation(").append(prop.name().toUpperCase()).append(",(greycat.Node)value);");
                             if(prop.parameters().get("opposite") != null) { //todo optimize
                                 String methoName = prop.parameters().get("opposite");
                                 bodyBuilder.append("value.internal_removeFrom")
@@ -230,14 +231,14 @@ public class Generator {
                                 internalRemove.setName(toCamelCase("internal_removeFrom " + prop.name()));
                                 internalRemove.setReturnTypeVoid();
                                 internalRemove.addParameter(typeToClassName(prop.type()),"value");
-                                internalRemove.setBody("super.removeFromRelation(" + prop.name().toUpperCase() + ",(Node)value);");
+                                internalRemove.setBody("super.removeFromRelation(" + prop.name().toUpperCase() + ",(greycat.Node)value);");
 
                                 MethodSource<JavaClassSource> internalAdd = javaClass.addMethod();
                                 internalAdd.setVisibility(Visibility.PACKAGE_PRIVATE);
                                 internalAdd.setName(toCamelCase("internal_addTo " + prop.name()));
                                 internalAdd.setReturnTypeVoid();
                                 internalAdd.addParameter(typeToClassName(prop.type()),"value");
-                                internalAdd.setBody("super.addToRelation(" + prop.name().toUpperCase() + ",(Node)value);");
+                                internalAdd.setBody("super.addToRelation(" + prop.name().toUpperCase() + ",(greycat.Node)value);");
                             }
 
                         } else {
@@ -252,9 +253,9 @@ public class Generator {
                                 getter.setName(toCamelCase("get " + prop.name()));
 
                                 getter.setBody("\t\tfinal DeferCounterSync waiter = this.graph().newSyncCounter(1);\n" +
-                                        "this.relation(" + prop.name().toUpperCase() + ", new Callback<Node[]>() {\n" +
+                                        "this.relation(" + prop.name().toUpperCase() + ", new greycat.Callback<greycat.Node[]>() {\n" +
                                         "@Override\n" +
-                                        "public void on(Node[] raw) {\n" +
+                                        "public void on(greycat.Node[] raw) {\n" +
                                         "if (raw == null || raw.length == 0) {\n" +
                                         "waiter.count();\n" +
                                         "} else {\n" +
@@ -275,9 +276,9 @@ public class Generator {
                                 StringBuffer buffer = new StringBuffer();
                                 buffer.append(" final DeferCounterSync waiter = this.graph().newSyncCounter(1);\n" +
                                         "        final " + classifier.fqn() + " selfPointer = this;\n" +
-                                        "        this.relation(" + prop.name().toUpperCase() + ", new Callback<Node[]>() {\n" +
+                                        "        this.relation(" + prop.name().toUpperCase() + ", new greycat.Callback<greycat.Node[]>() {\n" +
                                         "            @Override\n" +
-                                        "            public void on(Node[] raw) {\n" +
+                                        "            public void on(greycat.Node[] raw) {\n" +
                                         "                if (raw == null || raw.length == 0) {\n" +
                                         "                    RegressionNode casted = (RegressionNode) graph().newTypedNode(world(),time(),\"" + prop.algorithm() + "\");\n" +
                                         "                    selfPointer.addToRelation(" + prop.name().toUpperCase() + ",casted);\n");
@@ -386,15 +387,19 @@ public class Generator {
 
             }
         }
+
+
         //Generate plugin
         final JavaClassSource pluginClass = Roaster.create(JavaClassSource.class);
+        pluginClass.addImport(NodeFactory.class);
+        pluginClass.addImport(Graph.class);
         if (name.contains(".")) {
             pluginClass.setPackage(name.substring(0, name.lastIndexOf('.')));
             pluginClass.setName(name.substring(name.lastIndexOf('.') + 1) + "Plugin");
         } else {
             pluginClass.setName(name + "Plugin");
         }
-        pluginClass.addInterface("Plugin");
+        pluginClass.addInterface("greycat.plugin.Plugin");
 
         pluginClass.addMethod().setReturnTypeVoid()
                 .setVisibility(Visibility.PUBLIC)
@@ -407,10 +412,10 @@ public class Generator {
             if (classifier instanceof Class) {
                 String fqn = classifier.fqn();
                 startBodyBuilder.append("\t\tgraph.nodeRegistry()\n")
-                        .append("\t\t\t.declaration(").append(fqn).append(".NODE_NAME").append(")").append("\n")
+                        .append("\t\t\t.getOrCreateDeclaration(").append(fqn).append(".NODE_NAME").append(")").append("\n")
                         .append("\t\t\t.setFactory(new NodeFactory() {\n" +
                                 "\t\t\t\t\t@Override\n" +
-                                "\t\t\t\t\tpublic Node create(long world, long time, long id, Graph graph) {\n" +
+                                "\t\t\t\t\tpublic greycat.Node create(long world, long time, long id, Graph graph) {\n" +
                                 "\t\t\t\t\t\treturn new ").append(fqn).append("(world,time,id,graph);\n" +
                                 "\t\t\t\t\t}\n" +
                                 "\t\t\t\t});\n");
@@ -470,7 +475,7 @@ public class Generator {
                 .setVisibility(Visibility.PUBLIC)
                 .setFinal(true)
                 .setReturnTypeVoid()
-                .addParameter("Callback<Boolean>", "callback");
+                .addParameter("greycat.Callback<Boolean>", "callback");
 
         //Diconnect method
         modelClass
@@ -480,7 +485,7 @@ public class Generator {
                 .setVisibility(Visibility.PUBLIC)
                 .setFinal(true)
                 .setReturnTypeVoid()
-                .addParameter("Callback<Boolean>", "callback");
+                .addParameter("greycat.Callback<Boolean>", "callback");
 
         //save method
         modelClass
@@ -490,7 +495,7 @@ public class Generator {
                 .setVisibility(Visibility.PUBLIC)
                 .setFinal(true)
                 .setReturnTypeVoid()
-                .addParameter("Callback<Boolean>", "callback");
+                .addParameter("greycat.Callback<Boolean>", "callback");
 
 
         for (Classifier classifier : model.classifiers()) {
@@ -512,14 +517,14 @@ public class Generator {
                 loopFindMethod.addParameter("long", "world");
                 loopFindMethod.addParameter("long", "time");
                 loopFindMethod.addParameter("String", "query");
-                loopFindMethod.addParameter("Callback<" + resultType + "[]>","callback");
+                loopFindMethod.addParameter("greycat.Callback<" + resultType + "[]>","callback");
                 loopFindMethod.setBody(
-                        "       this._graph.index(world, time, \"" + casted.fqn() + "\", new Callback<NodeIndex>() {\n" +
+                        "       this._graph.index(world, time, \"" + casted.fqn() + "\", new greycat.Callback<greycat.NodeIndex>() {\n" +
                         "           @Override\n" +
-                        "           public void on(NodeIndex index) {\n" +
-                        "               index.find(new Callback<Node[]>() {\n" +
+                        "           public void on(greycat.NodeIndex index) {\n" +
+                        "               index.find(new greycat.Callback<greycat.Node[]>() {\n" +
                         "                   @Override\n" +
-                        "                   public void on(Node[] nodes) {\n" +
+                        "                   public void on(greycat.Node[] nodes) {\n" +
                         "                       " + resultType + "[] result = new " + resultType + "[nodes.length];\n" +
                         "                       for (int i = 0; i < result.length; i++) {\n" +
                         "                           result[i] = (" + resultType + ") nodes[i];\n" +
@@ -536,14 +541,14 @@ public class Generator {
                 loopFindAllMethod.setReturnTypeVoid();
                 loopFindAllMethod.addParameter("long", "world");
                 loopFindAllMethod.addParameter("long", "time");
-                loopFindAllMethod.addParameter("Callback<" + resultType + "[]>","callback");
+                loopFindAllMethod.addParameter("greycat.Callback<" + resultType + "[]>","callback");
                 loopFindAllMethod.setBody(
-                        "       this._graph.index(world, time, \"" + casted.fqn() + "\", new Callback<NodeIndex>() {\n" +
+                        "       this._graph.index(world, time, \"" + casted.fqn() + "\", new greycat.Callback<greycat.NodeIndex>() {\n" +
                                 "           @Override\n" +
-                                "           public void on(NodeIndex index) {\n" +
-                                "               index.find(new Callback<Node[]>() {\n" +
+                                "           public void on(greycat.NodeIndex index) {\n" +
+                                "               index.find(new greycat.Callback<greycat.Node[]>() {\n" +
                                 "                   @Override\n" +
-                                "                   public void on(Node[] nodes) {\n" +
+                                "                   public void on(greycat.Node[] nodes) {\n" +
                                 "                       " + resultType + "[] result = new " + resultType + "[nodes.length];\n" +
                                 "                       for (int i = 0; i < result.length; i++) {\n" +
                                 "                           result[i] = (" + resultType + ") nodes[i];\n" +
