@@ -15,6 +15,6 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KAttribute extends KProperty {
+public interface Attribute extends Property {
 
 }

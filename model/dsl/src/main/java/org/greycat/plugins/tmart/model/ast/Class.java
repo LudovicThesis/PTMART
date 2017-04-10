@@ -15,16 +15,16 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KClass extends KClassifier {
+public interface Class extends Classifier {
 
-    KProperty[] properties();
+    Property[] properties();
 
-    void addProperty(KProperty property);
+    void addProperty(Property property);
 
-    KProperty property(String name);
+    Property property(String name);
 
-    KClass parent();
+    Class parent();
 
-    void setParent(KClass parent);
+    void setParent(Class parent);
 
 }

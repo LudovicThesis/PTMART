@@ -16,7 +16,15 @@
 package org.greycat.plugins.tmart.model.ast;
 
 
+import org.antlr.v4.runtime.ANTLRFileStream;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.BufferedTokenStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import org.greycat.plugins.tmart.model.ast.impl.*;
+
 import java.io.File;
+import java.util.List;
 
 public class ModelBuilder {
 
@@ -25,12 +33,12 @@ public class ModelBuilder {
     }
 
     public static KModel parse(String content) {
-        KModel model = new Model();
+        KModel model = new ModelImpl();
         return build(new ANTLRInputStream(content), model);
     }
 
     public static KModel parse(File content) throws Exception {
-        KModel model = new Model();
+        KModel model = new ModelImpl();
         return build(new ANTLRFileStream(content.getAbsolutePath()), model);
     }
 
@@ -40,10 +48,10 @@ public class ModelBuilder {
 
     private static KModel build(ANTLRInputStream in, KModel model) {
 
-        BufferedTokenStream tokens = new CommonTokenStream(new org.kevoree.modeling.ast.MetaModelLexer(in));
-        org.kevoree.modeling.ast.MetaModelParser parser = new org.kevoree.modeling.ast.MetaModelParser(tokens);
-        org.kevoree.modeling.ast.MetaModelParser.MetamodelContext mmctx = parser.metamodel();
-        for (org.kevoree.modeling.ast.MetaModelParser.EnumDeclrContext enumDeclrContext : mmctx.enumDeclr()) {
+        BufferedTokenStream tokens = new CommonTokenStream(new org.greycat.plugins.tmart.model.ast.MetaModelLexer(in));
+        org.greycat.plugins.tmart.model.ast.MetaModelParser parser = new org.greycat.plugins.tmart.model.ast.MetaModelParser(tokens);
+        org.greycat.plugins.tmart.model.ast.MetaModelParser.MetamodelContext mmctx = parser.metamodel();
+        for (org.greycat.plugins.tmart.model.ast.MetaModelParser.EnumDeclrContext enumDeclrContext : mmctx.enumDeclr()) {
             String fqn = null;
             if (enumDeclrContext.TYPE_NAME() != null) {
                 fqn = enumDeclrContext.TYPE_NAME().toString();
@@ -51,12 +59,12 @@ public class ModelBuilder {
             if (enumDeclrContext.IDENT() != null) {
                 fqn = enumDeclrContext.IDENT().toString();
             }
-            final KEnum enumClass = (KEnum) getOrAddEnum(model, fqn);
+            final Enum enumClass = (Enum) getOrAddEnum(model, fqn);
             for (TerminalNode literal : enumDeclrContext.enumLiterals().IDENT()) {
                 enumClass.addLiteral(literal.getText());
             }
         }
-        for (org.kevoree.modeling.ast.MetaModelParser.ClassDeclrContext classDeclrContext : mmctx.classDeclr()) {
+        for (org.greycat.plugins.tmart.model.ast.MetaModelParser.ClassDeclrContext classDeclrContext : mmctx.classDeclr()) {
             String classFqn = null;
             if (classDeclrContext.TYPE_NAME() != null) {
                 classFqn = classDeclrContext.TYPE_NAME().toString();
@@ -64,33 +72,33 @@ public class ModelBuilder {
             if (classDeclrContext.IDENT() != null) {
                 classFqn = classDeclrContext.IDENT().toString();
             }
-            final KClass newClass = (KClass) getOrAddClass(model, classFqn);
+            final Class newClass = (Class) getOrAddClass(model, classFqn);
             //process parents
             if (classDeclrContext.parentsDeclr() != null) {
                 if (classDeclrContext.parentsDeclr().TYPE_NAME() != null) {
-                    final KClass newClassTT = (KClass) getOrAddClass(model, classDeclrContext.parentsDeclr().TYPE_NAME().toString());
+                    final Class newClassTT = (Class) getOrAddClass(model, classDeclrContext.parentsDeclr().TYPE_NAME().toString());
                     newClass.setParent(newClassTT);
                 }
                 if (classDeclrContext.parentsDeclr().IDENT() != null) {
-                    final KClass newClassTT = (KClass) getOrAddClass(model, classDeclrContext.parentsDeclr().IDENT().toString());
+                    final Class newClassTT = (Class) getOrAddClass(model, classDeclrContext.parentsDeclr().IDENT().toString());
                     newClass.setParent(newClassTT);
                 }
             }
-            for (org.kevoree.modeling.ast.MetaModelParser.AttributeDeclarationContext attDecl : classDeclrContext.attributeDeclaration()) {
+            for (org.greycat.plugins.tmart.model.ast.MetaModelParser.AttributeDeclarationContext attDecl : classDeclrContext.attributeDeclaration()) {
                 String name = attDecl.IDENT().getText();
-                org.kevoree.modeling.ast.MetaModelParser.AttributeTypeContext attType = attDecl.attributeType();
+                org.greycat.plugins.tmart.model.ast.MetaModelParser.AttributeTypeContext attType = attDecl.attributeType();
                 String value;
                 if (attType.TYPE_NAME() != null) {
                     value = attType.TYPE_NAME().getText();
                 } else {
                     value = attType.getText();
                 }
-                final KAttribute attribute = new Attribute(name, value);
+                final Attribute attribute = new AttributeImpl(name, value);
                 processAnnotations(attribute, attDecl.annotation());
-                processSemanticBloc(attribute, attDecl.semanticDeclr());
+//                processSemanticBloc(attribute, attDecl.semanticDeclr());
                 newClass.addProperty(attribute);
             }
-            for (org.kevoree.modeling.ast.MetaModelParser.RelationDeclarationContext relDecl : classDeclrContext.relationDeclaration()) {
+            for (org.greycat.plugins.tmart.model.ast.MetaModelParser.RelationDeclarationContext relDecl : classDeclrContext.relationDeclaration()) {
                 String name = relDecl.IDENT().get(0).getText();
                 String type;
                 if (relDecl.TYPE_NAME() == null) {
@@ -98,14 +106,14 @@ public class ModelBuilder {
                 } else {
                     type = relDecl.TYPE_NAME().toString();
                 }
-                final KRelation relation = new Relation(name, type);
+                final Relation relation = new RelationImpl(name, type);
                 processAnnotations(relation, relDecl.annotation());
-                processSemanticBloc(relation, relDecl.semanticDeclr());
+//                processSemanticBloc(relation, relDecl.semanticDeclr());
                 newClass.addProperty(relation);
             }
         }
 
-        for (org.kevoree.modeling.ast.MetaModelParser.IndexDeclrContext indexDeclrContext : mmctx.indexDeclr()) {
+        for (org.greycat.plugins.tmart.model.ast.MetaModelParser.IndexDeclrContext indexDeclrContext : mmctx.indexDeclr()) {
             String name = indexDeclrContext.IDENT().get(0).getText();
             String type;
             if (indexDeclrContext.TYPE_NAME() == null) {
@@ -113,7 +121,7 @@ public class ModelBuilder {
             } else {
                 type = indexDeclrContext.TYPE_NAME().toString();
             }
-            final KIndex indexClass = (KIndex) getOrAddIndex(model, name, (KClass) model.get(type));
+            final Index indexClass = (Index) getOrAddIndex(model, name, (Class) model.get(type));
             for (TerminalNode literal : indexDeclrContext.indexLiterals().IDENT()) {
                 indexClass.addProperty(literal.getText());
             }
@@ -121,9 +129,9 @@ public class ModelBuilder {
         return model;
     }
 
-    private static void processAnnotations(KProperty property, List<org.kevoree.modeling.ast.MetaModelParser.AnnotationContext> annotations) {
+    private static void processAnnotations(Property property, List<org.greycat.plugins.tmart.model.ast.MetaModelParser.AnnotationContext> annotations) {
         if (annotations != null) {
-            for (org.kevoree.modeling.ast.MetaModelParser.AnnotationContext annotationContext : annotations) {
+            for (org.greycat.plugins.tmart.model.ast.MetaModelParser.AnnotationContext annotationContext : annotations) {
                 if (annotationContext.getText().equals("learned")) {
                     property.setLearned();
                 }
@@ -137,69 +145,69 @@ public class ModelBuilder {
         }
     }
 
-    private static void processSemanticBloc(KProperty property, org.kevoree.modeling.ast.MetaModelParser.SemanticDeclrContext semanticDeclrContext) {
-        if (semanticDeclrContext != null) {
-            if (semanticDeclrContext.semanticFrom() != null) {
-                for (org.kevoree.modeling.ast.MetaModelParser.SemanticFromContext fromContext : semanticDeclrContext.semanticFrom()) {
-                    String val = fromContext.STRING().getText();
-                    val = val.substring(1, val.length() - 1);
-                    KDependency dependency = new Dependency(val);
-                    property.addDependency(dependency);
-                }
-            }
-            if (semanticDeclrContext.semanticUsing() != null) {
-                for (org.kevoree.modeling.ast.MetaModelParser.SemanticUsingContext usingContext : semanticDeclrContext.semanticUsing()) {
-                    String val = usingContext.STRING().getText();
-                    val = val.substring(1, val.length() - 1);
-                    property.setAlgorithm(val);
-                }
-            }
-            if (semanticDeclrContext.semanticWith() != null) {
-                for (org.kevoree.modeling.ast.MetaModelParser.SemanticWithContext withContext : semanticDeclrContext.semanticWith()) {
-                    String value;
-                    if (withContext.NUMBER() != null) {
-                        value = withContext.NUMBER().getText();
-                    } else if (withContext.STRING() != null) {
-                        String val = withContext.STRING().getText();
-                        val = val.substring(1, val.length() - 1);
-                        value = val;
-                    } else {
-                        value = null;
-                    }
-                    if (value != null) {
-                        property.addParameter(withContext.IDENT().getText(), value);
-                    }
-                }
-            }
-        }
-    }
+//    private static void processSemanticBloc(Property property, org.greycat.plugins.tmart.model.ast.MetaModelParser.SemanticDeclrContext semanticDeclrContext) {
+//        if (semanticDeclrContext != null) {
+//            if (semanticDeclrContext.semanticFrom() != null) {
+//                for (org.kevoree.modeling.ast.MetaModelParser.SemanticFromContext fromContext : semanticDeclrContext.semanticFrom()) {
+//                    String val = fromContext.STRING().getText();
+//                    val = val.substring(1, val.length() - 1);
+//                    Dependency dependency = new Dependency(val);
+//                    property.addDependency(dependency);
+//                }
+//            }
+//            if (semanticDeclrContext.semanticUsing() != null) {
+//                for (org.kevoree.modeling.ast.MetaModelParser.SemanticUsingContext usingContext : semanticDeclrContext.semanticUsing()) {
+//                    String val = usingContext.STRING().getText();
+//                    val = val.substring(1, val.length() - 1);
+//                    property.setAlgorithm(val);
+//                }
+//            }
+//            if (semanticDeclrContext.semanticWith() != null) {
+//                for (org.kevoree.modeling.ast.MetaModelParser.SemanticWithContext withContext : semanticDeclrContext.semanticWith()) {
+//                    String value;
+//                    if (withContext.NUMBER() != null) {
+//                        value = withContext.NUMBER().getText();
+//                    } else if (withContext.STRING() != null) {
+//                        String val = withContext.STRING().getText();
+//                        val = val.substring(1, val.length() - 1);
+//                        value = val;
+//                    } else {
+//                        value = null;
+//                    }
+//                    if (value != null) {
+//                        property.addParameter(withContext.IDENT().getText(), value);
+//                    }
+//                }
+//            }
+//        }
+//    }
 
-    private static KClassifier getOrAddClass(KModel model, String fqn) {
-        KClassifier previous = model.get(fqn);
+    private static Classifier getOrAddClass(KModel model, String fqn) {
+        Classifier previous = model.get(fqn);
         if (previous != null) {
             return previous;
         }
-        previous = new Class(fqn);
+        previous = new ClassImpl(fqn);
         model.addClassifier(previous);
         return previous;
     }
 
-    private static KClassifier getOrAddIndex(KModel model, String fqn, KClass clazz) {
-        KClassifier previous = model.get(fqn);
+    private static Classifier getOrAddIndex(KModel model, String fqn, Class clazz) {
+        Classifier previous = model.get(fqn);
         if (previous != null) {
             return previous;
         }
-        previous = new Index(fqn, clazz);
+        previous = new IndexImpl(fqn, clazz);
         model.addClassifier(previous);
         return previous;
     }
 
-    private static KClassifier getOrAddEnum(KModel model, String fqn) {
-        KClassifier previous = model.get(fqn);
+    private static Classifier getOrAddEnum(KModel model, String fqn) {
+        Classifier previous = model.get(fqn);
         if (previous != null) {
             return previous;
         }
-        previous = new Enum(fqn);
+        previous = new EnumImpl(fqn);
         model.addClassifier(previous);
         return previous;
     }

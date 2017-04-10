@@ -30,7 +30,7 @@ public class ClassImpl implements org.greycat.plugins.tmart.model.ast.Class {
 
     private org.greycat.plugins.tmart.model.ast.Class parent;
 
-    public Class(String fqn) {
+    public ClassImpl(String fqn) {
         if (fqn.contains(".")) {
             name = fqn.substring(fqn.lastIndexOf('.') + 1);
             pack = fqn.substring(0, fqn.lastIndexOf('.'));

@@ -15,11 +15,11 @@
  */
 package org.greycat.plugins.tmart.model.ast.impl;
 
-public class Dependency implements org.greycat.plugins.tmart.model.ast.Dependency {
+public class DependencyImpl implements org.greycat.plugins.tmart.model.ast.Dependency {
 
     private final String query;
 
-    public Dependency(String query) {
+    public DependencyImpl(String query) {
         this.query = query;
     }
 

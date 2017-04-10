@@ -21,11 +21,11 @@ import org.greycat.plugins.tmart.model.ast.KModel;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Model implements KModel {
+public class ModelImpl implements KModel {
 
     private final Map<String, Classifier> classifiers;
 
-    public Model() {
+    public ModelImpl() {
         classifiers = new HashMap<String, Classifier>();
     }
 

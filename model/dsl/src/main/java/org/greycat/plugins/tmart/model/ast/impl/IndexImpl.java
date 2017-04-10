@@ -21,7 +21,7 @@ import org.greycat.plugins.tmart.model.ast.Property;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class Index implements org.greycat.plugins.tmart.model.ast.Index {
+public class IndexImpl implements org.greycat.plugins.tmart.model.ast.Index {
 
     private final Set<Property> literals;
 
@@ -31,7 +31,7 @@ public class Index implements org.greycat.plugins.tmart.model.ast.Index {
 
     private final Class clazz;
 
-    public Index(String fqn, Class clazz) {
+    public IndexImpl(String fqn, Class clazz) {
         this.clazz = clazz;
         if (fqn.contains(".")) {
             name = fqn.substring(fqn.lastIndexOf('.') + 1);

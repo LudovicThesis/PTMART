@@ -17,10 +17,10 @@ package org.greycat.plugins.tmart.model.ast;
 
 public interface KModel {
 
-    KClassifier[] classifiers();
+    Classifier[] classifiers();
 
-    void addClassifier(KClassifier classifier);
+    void addClassifier(Classifier classifier);
 
-    KClassifier get(String fqn);
+    Classifier get(String fqn);
 
 }

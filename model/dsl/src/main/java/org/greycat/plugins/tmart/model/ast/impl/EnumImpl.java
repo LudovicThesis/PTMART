@@ -18,7 +18,7 @@ package org.greycat.plugins.tmart.model.ast.impl;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class Enum implements org.greycat.plugins.tmart.model.ast.Enum {
+public class EnumImpl implements org.greycat.plugins.tmart.model.ast.Enum {
 
     private final Set<String> literals;
 
@@ -26,7 +26,7 @@ public class Enum implements org.greycat.plugins.tmart.model.ast.Enum {
 
     private final String name;
 
-    public Enum(String fqn) {
+    public EnumImpl(String fqn) {
         if (fqn.contains(".")) {
             name = fqn.substring(fqn.lastIndexOf('.')+1);
             pack = fqn.substring(0, fqn.lastIndexOf('.'));

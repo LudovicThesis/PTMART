@@ -15,7 +15,7 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KClassifier {
+public interface Classifier {
 
     String name();
 

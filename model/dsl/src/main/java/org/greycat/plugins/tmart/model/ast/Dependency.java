@@ -16,7 +16,7 @@
 package org.greycat.plugins.tmart.model.ast;
 
 
-public interface KDependency {
+public interface Dependency {
 
     String query();
 

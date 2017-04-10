@@ -15,8 +15,8 @@
  */
 package org.greycat.plugins.tmart.model.ast.impl;
 
-public class Relation extends Property implements org.greycat.plugins.tmart.model.ast.Relation {
-    public Relation(String name, String type) {
+public class RelationImpl extends PropertyImpl implements org.greycat.plugins.tmart.model.ast.Relation {
+    public RelationImpl(String name, String type) {
         super(name, type);
     }
 }

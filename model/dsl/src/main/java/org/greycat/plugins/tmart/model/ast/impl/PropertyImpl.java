@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class Property implements org.greycat.plugins.tmart.model.ast.Property {
+public abstract class PropertyImpl implements org.greycat.plugins.tmart.model.ast.Property {
 
     private final String name;
 
@@ -43,7 +43,7 @@ public abstract class Property implements org.greycat.plugins.tmart.model.ast.Pr
 
     private boolean global = false;
 
-    public Property(String name, String type) {
+    public PropertyImpl(String name, String type) {
         this.name = name;
         this.type = type;
         indexes = new ArrayList<Index>();
@@ -133,7 +133,7 @@ public abstract class Property implements org.greycat.plugins.tmart.model.ast.Pr
 
     @Override
     public int compareTo(Object o) {
-        Property p2 = (Property) o;
+        PropertyImpl p2 = (PropertyImpl) o;
         if(p2.name().equals(name)){
             return 0;
         } else {

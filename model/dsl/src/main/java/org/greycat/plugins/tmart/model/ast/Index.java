@@ -15,12 +15,12 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KIndex extends KClassifier {
+public interface Index extends Classifier {
 
-    KProperty[] properties();
+    Property[] properties();
 
     void addProperty(String value);
 
-    KClass type();
+    Class type();
 
 }

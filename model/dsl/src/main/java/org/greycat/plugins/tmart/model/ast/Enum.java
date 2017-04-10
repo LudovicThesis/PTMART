@@ -15,7 +15,7 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KEnum extends KClassifier {
+public interface Enum extends Classifier {
 
     String[] literals();
 

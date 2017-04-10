@@ -15,5 +15,5 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KRelation extends KProperty {
+public interface Relation extends Property {
 }

@@ -17,7 +17,7 @@ package org.greycat.plugins.tmart.model.ast;
 
 import java.util.Map;
 
-public interface KProperty extends Comparable {
+public interface Property extends Comparable {
 
     String name();
 
@@ -27,13 +27,13 @@ public interface KProperty extends Comparable {
 
     void setAlgorithm(String alg);
 
-    KDependency[] dependencies();
+    Dependency[] dependencies();
 
-    void addIndex(KIndex index);
+    void addIndex(Index index);
 
-    KIndex[] indexes();
+    Index[] indexes();
 
-    void addDependency(KDependency dependency);
+    void addDependency(Dependency dependency);
 
     Map<String, String> parameters();
 

@@ -15,10 +15,8 @@
  */
 package org.greycat.plugins.tmart.model.ast.impl;
 
-import org.greycat.plugins.tmart.model.ast.KAttribute;
-
-public class Attribute extends Property implements KAttribute {
-    public Attribute(String name, String type) {
+public class AttributeImpl extends PropertyImpl implements org.greycat.plugins.tmart.model.ast.Attribute {
+    public AttributeImpl(String name, String type) {
         super(name, type);
     }
 }
