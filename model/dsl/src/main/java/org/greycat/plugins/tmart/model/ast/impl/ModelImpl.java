@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kevoree.modeling.ast.impl;
+package org.greycat.plugins.tmart.model.ast.impl;
 
-import org.greycat.plugins.tmart.model.ast.KClassifier;
+import org.greycat.plugins.tmart.model.ast.Classifier;
 import org.greycat.plugins.tmart.model.ast.KModel;
 
 import java.util.HashMap;
@@ -23,24 +23,24 @@ import java.util.Map;
 
 public class Model implements KModel {
 
-    private final Map<String, KClassifier> classifiers;
+    private final Map<String, Classifier> classifiers;
 
     public Model() {
-        classifiers = new HashMap<String, KClassifier>();
+        classifiers = new HashMap<String, Classifier>();
     }
 
     @Override
-    public KClassifier[] classifiers() {
-        return classifiers.values().toArray(new KClassifier[classifiers.size()]);
+    public Classifier[] classifiers() {
+        return classifiers.values().toArray(new Classifier[classifiers.size()]);
     }
 
     @Override
-    public void addClassifier(KClassifier classifier) {
+    public void addClassifier(Classifier classifier) {
         classifiers.put(classifier.fqn(), classifier);
     }
 
     @Override
-    public KClassifier get(String fqn) {
+    public Classifier get(String fqn) {
         return classifiers.get(fqn);
     }
 }

@@ -15,6 +15,6 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-public interface KAttribute extends org.kevoree.modeling.ast.KProperty {
+public interface KAttribute extends KProperty {
 
 }

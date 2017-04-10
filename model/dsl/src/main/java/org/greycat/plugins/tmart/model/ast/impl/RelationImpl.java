@@ -13,20 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kevoree.modeling.ast.impl;
+package org.greycat.plugins.tmart.model.ast.impl;
 
-import org.greycat.plugins.tmart.model.ast.KDependency;
-
-public class Dependency implements KDependency {
-
-    private final String query;
-
-    public Dependency(String query) {
-        this.query = query;
-    }
-
-    @Override
-    public String query() {
-        return query;
+public class Relation extends Property implements org.greycat.plugins.tmart.model.ast.Relation {
+    public Relation(String name, String type) {
+        super(name, type);
     }
 }

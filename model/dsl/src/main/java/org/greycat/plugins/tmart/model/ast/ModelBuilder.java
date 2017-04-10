@@ -15,17 +15,8 @@
  */
 package org.greycat.plugins.tmart.model.ast;
 
-import org.antlr.v4.runtime.ANTLRFileStream;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.BufferedTokenStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.TerminalNode;
-import org.kevoree.modeling.ast.impl.*;
-import org.kevoree.modeling.ast.impl.Class;
-import org.kevoree.modeling.ast.impl.Enum;
 
 import java.io.File;
-import java.util.List;
 
 public class ModelBuilder {
 

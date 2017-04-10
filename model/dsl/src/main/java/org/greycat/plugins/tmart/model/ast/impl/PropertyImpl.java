@@ -13,26 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kevoree.modeling.ast.impl;
+package org.greycat.plugins.tmart.model.ast.impl;
 
-import org.greycat.plugins.tmart.model.ast.KDependency;
-import org.greycat.plugins.tmart.model.ast.KIndex;
-import org.greycat.plugins.tmart.model.ast.KProperty;
+import org.greycat.plugins.tmart.model.ast.Dependency;
+import org.greycat.plugins.tmart.model.ast.Index;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class Property implements KProperty {
+public abstract class Property implements org.greycat.plugins.tmart.model.ast.Property {
 
     private final String name;
 
     private final String type;
 
-    private final List<KDependency> dependencies;
+    private final List<Dependency> dependencies;
 
-    private final List<KIndex> indexes;
+    private final List<Index> indexes;
 
     private final Map<String, String> paramaters;
 
@@ -47,8 +46,8 @@ public abstract class Property implements KProperty {
     public Property(String name, String type) {
         this.name = name;
         this.type = type;
-        indexes = new ArrayList<KIndex>();
-        dependencies = new ArrayList<KDependency>();
+        indexes = new ArrayList<Index>();
+        dependencies = new ArrayList<Dependency>();
         paramaters = new HashMap<String, String>();
     }
 
@@ -73,22 +72,22 @@ public abstract class Property implements KProperty {
     }
 
     @Override
-    public KDependency[] dependencies() {
-        return dependencies.toArray(new KDependency[dependencies.size()]);
+    public Dependency[] dependencies() {
+        return dependencies.toArray(new Dependency[dependencies.size()]);
     }
 
     @Override
-    public void addIndex(KIndex index) {
+    public void addIndex(Index index) {
         indexes.add(index);
     }
 
     @Override
-    public KIndex[] indexes() {
-        return indexes.toArray(new KIndex[indexes.size()]);
+    public Index[] indexes() {
+        return indexes.toArray(new Index[indexes.size()]);
     }
 
     @Override
-    public void addDependency(KDependency dependency) {
+    public void addDependency(Dependency dependency) {
         dependencies.add(dependency);
     }
 

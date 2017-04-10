@@ -13,52 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kevoree.modeling.ast.impl;
-
-import org.greycat.plugins.tmart.model.ast.KClass;
-import org.greycat.plugins.tmart.model.ast.KIndex;
-import org.greycat.plugins.tmart.model.ast.KProperty;
+package org.greycat.plugins.tmart.model.ast.impl;
 
 import java.util.Set;
 import java.util.TreeSet;
 
-public class Index implements KIndex {
+public class Enum implements org.greycat.plugins.tmart.model.ast.Enum {
 
-    private final Set<KProperty> literals;
+    private final Set<String> literals;
 
     private final String pack;
 
     private final String name;
 
-    private final KClass clazz;
-
-    public Index(String fqn, KClass clazz) {
-        this.clazz = clazz;
+    public Enum(String fqn) {
         if (fqn.contains(".")) {
-            name = fqn.substring(fqn.lastIndexOf('.') + 1);
+            name = fqn.substring(fqn.lastIndexOf('.')+1);
             pack = fqn.substring(0, fqn.lastIndexOf('.'));
         } else {
             name = fqn;
             pack = null;
         }
-        literals = new TreeSet<KProperty>();
+        literals = new TreeSet<String>();
     }
 
     @Override
-    public KProperty[] properties() {
-        return literals.toArray(new KProperty[literals.size()]);
+    public String[] literals() {
+        return literals.toArray(new String[literals.size()]);
     }
 
     @Override
-    public void addProperty(String value) {
-        KProperty prop = clazz.property(value);
-        literals.add(prop);
-        prop.addIndex(this);
-    }
-
-    @Override
-    public KClass type() {
-        return this.clazz;
+    public void addLiteral(String value) {
+        literals.add(value);
     }
 
     @Override
@@ -79,5 +65,4 @@ public class Index implements KIndex {
     public String pack() {
         return pack;
     }
-
 }

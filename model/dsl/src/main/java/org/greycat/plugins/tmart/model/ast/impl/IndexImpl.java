@@ -13,25 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kevoree.modeling.ast.impl;
+package org.greycat.plugins.tmart.model.ast.impl;
 
-import org.greycat.plugins.tmart.model.ast.KClass;
-import org.greycat.plugins.tmart.model.ast.KProperty;
+import org.greycat.plugins.tmart.model.ast.Class;
+import org.greycat.plugins.tmart.model.ast.Property;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
-public class Class implements KClass {
+public class Index implements org.greycat.plugins.tmart.model.ast.Index {
+
+    private final Set<Property> literals;
 
     private final String pack;
 
     private final String name;
 
-    private final Map<String, KProperty> properties;
+    private final Class clazz;
 
-    private KClass parent;
-
-    public Class(String fqn) {
+    public Index(String fqn, Class clazz) {
+        this.clazz = clazz;
         if (fqn.contains(".")) {
             name = fqn.substring(fqn.lastIndexOf('.') + 1);
             pack = fqn.substring(0, fqn.lastIndexOf('.'));
@@ -39,37 +40,24 @@ public class Class implements KClass {
             name = fqn;
             pack = null;
         }
-        properties = new HashMap<String, KProperty>();
+        literals = new TreeSet<Property>();
     }
 
     @Override
-    public KProperty[] properties() {
-        return properties.values().toArray(new KProperty[properties.size()]);
+    public Property[] properties() {
+        return literals.toArray(new Property[literals.size()]);
     }
 
     @Override
-    public KProperty property(String name) {
-        for (KProperty property : properties()) {
-            if (property.name().equals(name)) {
-                return property;
-            }
-        }
-        return null;
+    public void addProperty(String value) {
+        Property prop = clazz.property(value);
+        literals.add(prop);
+        prop.addIndex(this);
     }
 
     @Override
-    public void addProperty(KProperty property) {
-        properties.put(property.name(), property);
-    }
-
-    @Override
-    public KClass parent() {
-        return parent;
-    }
-
-    @Override
-    public void setParent(KClass parent) {
-        this.parent = parent;
+    public Class type() {
+        return this.clazz;
     }
 
     @Override
@@ -90,4 +78,5 @@ public class Class implements KClass {
     public String pack() {
         return pack;
     }
+
 }

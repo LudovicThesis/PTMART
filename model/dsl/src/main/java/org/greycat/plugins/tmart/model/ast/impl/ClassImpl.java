@@ -13,40 +13,62 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kevoree.modeling.ast.impl;
+package org.greycat.plugins.tmart.model.ast.impl;
 
-import org.greycat.plugins.tmart.model.ast.KEnum;
+import org.greycat.plugins.tmart.model.ast.Property;
 
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Enum implements KEnum {
-
-    private final Set<String> literals;
+public class ClassImpl implements org.greycat.plugins.tmart.model.ast.Class {
 
     private final String pack;
 
     private final String name;
 
-    public Enum(String fqn) {
+    private final Map<String, Property> properties;
+
+    private org.greycat.plugins.tmart.model.ast.Class parent;
+
+    public Class(String fqn) {
         if (fqn.contains(".")) {
-            name = fqn.substring(fqn.lastIndexOf('.')+1);
+            name = fqn.substring(fqn.lastIndexOf('.') + 1);
             pack = fqn.substring(0, fqn.lastIndexOf('.'));
         } else {
             name = fqn;
             pack = null;
         }
-        literals = new TreeSet<String>();
+        properties = new HashMap<String, Property>();
     }
 
     @Override
-    public String[] literals() {
-        return literals.toArray(new String[literals.size()]);
+    public Property[] properties() {
+        return properties.values().toArray(new Property[properties.size()]);
     }
 
     @Override
-    public void addLiteral(String value) {
-        literals.add(value);
+    public Property property(String name) {
+        for (Property property : properties()) {
+            if (property.name().equals(name)) {
+                return property;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void addProperty(Property property) {
+        properties.put(property.name(), property);
+    }
+
+    @Override
+    public org.greycat.plugins.tmart.model.ast.Class parent() {
+        return parent;
+    }
+
+    @Override
+    public void setParent(org.greycat.plugins.tmart.model.ast.Class parent) {
+        this.parent = parent;
     }
 
     @Override
