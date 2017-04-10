@@ -443,6 +443,9 @@ public class Generator {
         }
         modelClass.addField().setName("_graph").setVisibility(Visibility.PRIVATE).setType(Graph.class).setFinal(true);
 
+        modelClass.addField().setName("PLANNED_WORLD").setVisibility(Visibility.PUBLIC).setType("long").setStatic(true);
+        modelClass.addField().setName("REAL_WORLD").setVisibility(Visibility.PUBLIC).setType("long").setStatic(true).setFinal(true).setLiteralInitializer("0");
+
         //add indexes name
         for (Classifier classifier : model.classifiers()) {
             if (classifier instanceof Index) {
@@ -466,12 +469,29 @@ public class Generator {
         }
         modelClass.addMethod().setName("graph").setBody("return this._graph;").setVisibility(Visibility.PUBLIC).setFinal(true).setReturnType(Graph.class);
 
+        //NOW method
+        modelClass.addMethod()
+                .setName("NOW")
+                .setBody("return System.currentTimeMillis();")
+                .setVisibility(Visibility.PUBLIC)
+                .setFinal(true)
+                .setStatic(true)
+                .setReturnType("long");
+
         //Connect method
         modelClass.addImport(Callback.class);
         modelClass
                 .addMethod()
                 .setName("connect")
-                .setBody("_graph.connect(callback);")
+                .setBody("_graph.connect(new greycat.Callback<Boolean>() {\n" +
+                        "\t\t\t@Override\n" +
+                        "\t\t\tpublic void on(Boolean result) {\n" +
+                        "\t\t\t\tif(PLANNED_WORLD == greycat.Constants.NULL_LONG) {\n" +
+                        "\t\t\t\t    PLANNED_WORLD = graph().fork(REAL_WORLD);\n" +
+                        "                }\n" +
+                        "                callback.on(result);\n" +
+                        "\t\t\t}\n" +
+                        "\t\t});")
                 .setVisibility(Visibility.PUBLIC)
                 .setFinal(true)
                 .setReturnTypeVoid()
@@ -564,6 +584,83 @@ public class Generator {
 
 
         sources.add(modelClass);
+
+
+        // Generate Task API
+        final JavaClassSource taskAPI = Roaster.create(JavaClassSource.class);
+        if(name.contains(".")) {
+            taskAPI.setPackage(name.substring(0, name.lastIndexOf('.')));
+            taskAPI.setName(name.substring(name.lastIndexOf('.') + 1) + "TaskAPI");
+        } else {
+            taskAPI.setName(name + "TaskAPI");
+        }
+
+        taskAPI.addMethod()
+                .setName("travelInRealWorld")
+                .setBody("return greycat.internal.task.CoreActions.travelInWorld(" + name + "Model.REAL_WORLD + \"\");")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setReturnType("greycat.Action");
+
+        taskAPI.addMethod()
+                .setName("travelInPlannedWorld")
+                .setBody("return greycat.internal.task.CoreActions.travelInWorld(" + name + "Model.PLANNED_WORLD + \"\");")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setReturnType("greycat.Action");
+
+        taskAPI.addMethod()
+                .setName("travelInCurrentContext")
+                .setBody("return greycat.internal.task.CoreActions.travelInTime(" + name + "Model.NOW() + \"\");")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setReturnType("greycat.Action");
+
+        for(Classifier classifier: model.classifiers()) {
+            if(classifier instanceof Class) {
+                taskAPI.addMethod()
+                        .setName("new" + classifier.name())
+                        .setReturnType("greycat.Action")
+                        .setStatic(true)
+                        .setBody("return greycat.internal.task.CoreActions.createTypedNode("+ classifier.pack() + "." + classifier.name() + ".NODE_NAME);");
+
+                for(Property property : ((Class) classifier).properties()) {
+                    if(property instanceof Attribute) {
+                        taskAPI.addMethod()
+                                .setName("set" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
+                                .setReturnType("greycat.Action")
+                                .setStatic(true)
+                                .setVisibility(Visibility.PUBLIC)
+                                .setBody("return greycat.internal.task.CoreActions.setAttribute("+ classifier.fqn()+ "." + property.name().toUpperCase()+"," + classifier.fqn() +"." + property.name().toUpperCase() + "_TYPE," + property.name() + " + \"\");")
+                                .addParameter(typeToClassName(property.type()),property.name());
+
+                        taskAPI.addMethod()
+                                .setName("get" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
+                                .setReturnType("greycat.Action")
+                                .setStatic(true)
+                                .setVisibility(Visibility.PUBLIC)
+                                .setBody("return greycat.internal.task.CoreActions.attribute(" + classifier.fqn() + "." + property.name().toUpperCase() +");");
+                    } else if(property instanceof Relation) {
+                        taskAPI.addMethod()
+                                .setName("addTo" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
+                                .setReturnType("greycat.Action")
+                                .setStatic(true)
+                                .setVisibility(Visibility.PUBLIC)
+                                .setBody("return greycat.internal.task.CoreActions.addVarToRelation(" + classifier.name() +"." + property.name().toUpperCase() + ",varName);")
+                                .addParameter("String","varName");
+
+                        taskAPI.addMethod()
+                                .setName("traverse" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
+                                .setReturnType("greycat.Action")
+                                .setStatic(true)
+                                .setVisibility(Visibility.PUBLIC)
+                                .setBody("return greycat.internal.task.CoreActions.traverse(" + classifier.name() +"." + property.name().toUpperCase() + ");");
+                    }
+                }
+            }
+        }
+
+        sources.add(taskAPI);
 
         //DEBUG print
         for (JavaSource src : sources) {
