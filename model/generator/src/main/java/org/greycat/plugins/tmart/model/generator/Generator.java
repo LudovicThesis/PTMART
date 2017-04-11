@@ -600,7 +600,7 @@ public class Generator {
                                 .setVisibility(Visibility.PUBLIC)
                                 .setStatic(true)
                                 .setBody("return greycat.internal.task.CoreActions.setAttribute("+ classifier.fqn()+ "." + property.name().toUpperCase()+"," + classifier.fqn() +"." + property.name().toUpperCase() + "_TYPE," + property.name() + " + \"\");")
-                                .addParameter(typeToClassName(property.type()),property.name());
+                                .addParameter(String.class,property.name());
 
                         taskAPI.addMethod()
                                 .setName("get" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
