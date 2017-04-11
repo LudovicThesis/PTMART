@@ -511,19 +511,21 @@ public class Generator {
                 loopFindMethod.addParameter("String", "query");
                 loopFindMethod.addParameter("greycat.Callback<" + resultType + "[]>","callback");
                 loopFindMethod.setBody(
-                        "       this._graph.index(world, time, IDX_" + casted.fqn().toUpperCase() + ", new greycat.Callback<greycat.NodeIndex>() {\n" +
+                        "       this._graph.indexIfExists(world, time, IDX_" + casted.fqn().toUpperCase() + ", new greycat.Callback<greycat.NodeIndex>() {\n" +
                         "           @Override\n" +
                         "           public void on(greycat.NodeIndex index) {\n" +
-                        "               index.find(new greycat.Callback<greycat.Node[]>() {\n" +
-                        "                   @Override\n" +
-                        "                   public void on(greycat.Node[] nodes) {\n" +
-                        "                       " + resultType + "[] result = new " + resultType + "[nodes.length];\n" +
-                        "                       for (int i = 0; i < result.length; i++) {\n" +
-                        "                           result[i] = (" + resultType + ") nodes[i];\n" +
+                        "               if(index != null) {\n" +
+                        "                   index.find(new greycat.Callback<greycat.Node[]>() {\n" +
+                        "                       @Override\n" +
+                        "                       public void on(greycat.Node[] nodes) {\n" +
+                        "                           " + resultType + "[] result = new " + resultType + "[nodes.length];\n" +
+                        "                           for (int i = 0; i < result.length; i++) {\n" +
+                        "                               result[i] = (" + resultType + ") nodes[i];\n" +
+                        "                           }\n" +
+                        "                           callback.on(result);\n" +
                         "                       }\n" +
-                        "                       callback.on(result);\n" +
-                        "                   }\n" +
-                        "               },query);\n" +
+                        "                   },query);\n" +
+                        "               }\n" +
                         "           }\n" +
                         "       });"
                 );
@@ -535,19 +537,21 @@ public class Generator {
                 loopFindAllMethod.addParameter("long", "time");
                 loopFindAllMethod.addParameter("greycat.Callback<" + resultType + "[]>","callback");
                 loopFindAllMethod.setBody(
-                        "       this._graph.index(world, time, IDX_" + casted.fqn().toUpperCase() + ", new greycat.Callback<greycat.NodeIndex>() {\n" +
+                        "       this._graph.indexIfExists(world, time, IDX_" + casted.fqn().toUpperCase() + ", new greycat.Callback<greycat.NodeIndex>() {\n" +
                                 "           @Override\n" +
                                 "           public void on(greycat.NodeIndex index) {\n" +
-                                "               index.find(new greycat.Callback<greycat.Node[]>() {\n" +
-                                "                   @Override\n" +
-                                "                   public void on(greycat.Node[] nodes) {\n" +
-                                "                       " + resultType + "[] result = new " + resultType + "[nodes.length];\n" +
-                                "                       for (int i = 0; i < result.length; i++) {\n" +
-                                "                           result[i] = (" + resultType + ") nodes[i];\n" +
+                                "               if(index != null) {\n" +
+                                "                   index.find(new greycat.Callback<greycat.Node[]>() {\n" +
+                                "                       @Override\n" +
+                                "                       public void on(greycat.Node[] nodes) {\n" +
+                                "                           " + resultType + "[] result = new " + resultType + "[nodes.length];\n" +
+                                "                           for (int i = 0; i < result.length; i++) {\n" +
+                                "                               result[i] = (" + resultType + ") nodes[i];\n" +
+                                "                           }\n" +
+                                "                           callback.on(result);\n" +
                                 "                       }\n" +
-                                "                       callback.on(result);\n" +
-                                "                   }\n" +
-                                "               });\n" +
+                                "                   });\n" +
+                                "               }\n" +
                                 "           }\n" +
                                 "       });"
                 );
@@ -586,7 +590,7 @@ public class Generator {
         for(Classifier classifier: model.classifiers()) {
             if(classifier instanceof Class) {
                 taskAPI.addMethod()
-                        .setName("new" + classifier.name())
+                        .setName("create" + classifier.name() + "Node")
                         .setReturnType("greycat.Action")
                         .setVisibility(Visibility.PUBLIC)
                         .setStatic(true)
@@ -665,6 +669,25 @@ public class Generator {
                         .setVisibility(Visibility.PUBLIC)
                         .setStatic(true)
                         .setBody("return greycat.internal.task.CoreActions.readGlobalIndex(" + name +"Model.IDX_" + classifier.name().toUpperCase() +");");
+
+                StringBuilder indexedProperties = new StringBuilder();
+                Property[] properties = ((Index)classifier).properties();
+                for(int iIdxProp = 0; iIdxProp<properties.length; iIdxProp++) {
+                    indexedProperties.append(((Index) classifier).type().fqn())
+                            .append(".")
+                            .append(properties[iIdxProp].name().toUpperCase());
+
+                    if(iIdxProp < properties.length - 1) {
+                        indexedProperties.append(",");
+                    }
+                }
+                taskAPI.addMethod()
+                        .setName("index" + ((Index)classifier).type().name())
+                        .setReturnType("greycat.Action")
+                        .setVisibility(Visibility.PUBLIC)
+                        .setStatic(true)
+                        .setBody("return greycat.internal.task.CoreActions.addToGlobalTimedIndex(" + name+ "Model.IDX_" + classifier.name().toUpperCase()+", " + indexedProperties + ");");
+
             }
         }
 
