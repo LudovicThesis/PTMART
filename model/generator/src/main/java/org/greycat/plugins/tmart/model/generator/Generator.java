@@ -511,7 +511,7 @@ public class Generator {
                 loopFindMethod.addParameter("String", "query");
                 loopFindMethod.addParameter("greycat.Callback<" + resultType + "[]>","callback");
                 loopFindMethod.setBody(
-                        "       this._graph.index(world, time, \"" + casted.fqn() + "\", new greycat.Callback<greycat.NodeIndex>() {\n" +
+                        "       this._graph.index(world, time, IDX_" + casted.fqn().toUpperCase() + ", new greycat.Callback<greycat.NodeIndex>() {\n" +
                         "           @Override\n" +
                         "           public void on(greycat.NodeIndex index) {\n" +
                         "               index.find(new greycat.Callback<greycat.Node[]>() {\n" +
@@ -535,7 +535,7 @@ public class Generator {
                 loopFindAllMethod.addParameter("long", "time");
                 loopFindAllMethod.addParameter("greycat.Callback<" + resultType + "[]>","callback");
                 loopFindAllMethod.setBody(
-                        "       this._graph.index(world, time, \"" + casted.fqn() + "\", new greycat.Callback<greycat.NodeIndex>() {\n" +
+                        "       this._graph.index(world, time, IDX_" + casted.fqn().toUpperCase() + ", new greycat.Callback<greycat.NodeIndex>() {\n" +
                                 "           @Override\n" +
                                 "           public void on(greycat.NodeIndex index) {\n" +
                                 "               index.find(new greycat.Callback<greycat.Node[]>() {\n" +
@@ -561,9 +561,10 @@ public class Generator {
         // Generate Task API
         final JavaClassSource taskAPI = Roaster.create(JavaClassSource.class);
         if(name.contains(".")) {
-            taskAPI.setPackage(name.substring(0, name.lastIndexOf('.')));
+            taskAPI.setPackage(name.substring(0, name.lastIndexOf('.')) + ".task");
             taskAPI.setName(name.substring(name.lastIndexOf('.') + 1) + "TaskAPI");
         } else {
+            taskAPI.setPackage("task");
             taskAPI.setName(name + "TaskAPI");
         }
 
@@ -581,12 +582,6 @@ public class Generator {
                 .setStatic(true)
                 .setReturnType("greycat.Action");
 
-        taskAPI.addMethod()
-                .setName("travelInCurrentContext")
-                .setBody("return greycat.internal.task.CoreActions.travelInTime(" + name + "Model.NOW() + \"\");")
-                .setVisibility(Visibility.PUBLIC)
-                .setStatic(true)
-                .setReturnType("greycat.Action");
 
         for(Classifier classifier: model.classifiers()) {
             if(classifier instanceof Class) {
@@ -630,10 +625,52 @@ public class Generator {
                                 .setBody("return greycat.internal.task.CoreActions.traverse(" + classifier.fqn() +"." + property.name().toUpperCase() + ");");
                     }
                 }
+
+
+
+                // Create TaskFunctionSelect
+                final JavaInterfaceSource functionSelect = Roaster.create(JavaInterfaceSource.class);
+                functionSelect.setPackage(taskAPI.getPackage());
+                functionSelect.setName("TaskFunctionSelect" + classifier.name());
+                functionSelect.addAnnotation(FunctionalInterface.class);
+                functionSelect.addInterface(TaskFunctionSelect.class);
+
+                MethodSource first = functionSelect.addMethod()
+                        .setName("select")
+                        .setReturnType(boolean.class)
+                        .setBody("return select((" + classifier.fqn() + ")node,context);")
+                        .setDefault(true);
+                first.addParameter("greycat.Node","node");
+                first.addParameter("greycat.TaskContext","context");
+                first.addAnnotation(Override.class);
+
+                MethodSource second = functionSelect.addMethod()
+                        .setName("select")
+                        .setReturnType(boolean.class);
+                second.addParameter(classifier.fqn(),classifier.name().toLowerCase());
+                second.addParameter("greycat.TaskContext","context");
+
+
+
+                sources.add(functionSelect);
+
+
+
+
+
+            } else if(classifier instanceof Index) {
+                taskAPI.addMethod()
+                        .setName("findAll" + ((Index)classifier).type().name() + "s")
+                        .setReturnType("greycat.Action")
+                        .setVisibility(Visibility.PUBLIC)
+                        .setStatic(true)
+                        .setBody("return greycat.internal.task.CoreActions.readGlobalIndex(" + name +"Model.IDX_" + classifier.name().toUpperCase() +");");
             }
         }
 
         sources.add(taskAPI);
+
+
 
         //DEBUG print
         for (JavaSource src : sources) {
