@@ -16,10 +16,7 @@
 package org.greycat.plugins.tmart.model.generator;
 
 
-import greycat.Callback;
-import greycat.Graph;
-import greycat.GraphBuilder;
-import greycat.Type;
+import greycat.*;
 import greycat.plugin.NodeFactory;
 import org.greycat.plugins.tmart.model.ast.*;
 import org.greycat.plugins.tmart.model.ast.Class;
@@ -115,6 +112,8 @@ public class Generator {
                         .setStringInitializer(javaClass.getCanonicalName())
                         .setStatic(true);
 
+                StringBuilder indexedProperties=null;
+                String indexName = null;
                 for (Property prop : loopClass.properties()) {
 
                     //add helper name
@@ -309,78 +308,51 @@ public class Generator {
 
 
                                 //generate setter
-                                MethodSource<JavaClassSource> setter = javaClass.addMethod();
-                                setter.setVisibility(Visibility.PUBLIC).setFinal(true);
-                                setter.setName(toCamelCase("set " + prop.name()));
-                                setter.setReturnType(classifier.fqn());
-                                setter.addParameter(typeToClassName(prop.type()), "value");
+                                javaClass.addMethod()
+                                        .setVisibility(Visibility.PUBLIC).setFinal(true)
+                                        .setName(toCamelCase("set " + prop.name()))
+                                        .setReturnType(classifier.fqn())
+                                        .setBody("super.set(" + prop.name().toUpperCase() + ", " + prop.name().toUpperCase()
+                                            + "_TYPE,value);\nreturn this;"
+                                        )
+                                        .addParameter(typeToClassName(prop.type()), "value");
 
-                                StringBuffer buffer = new StringBuffer();
-                                buffer.append("super.set(")
-                                        .append(prop.name().toUpperCase())
-                                        .append(", ")
-                                        .append(prop.name().toUpperCase())
-                                        .append("_TYPE")
-                                        .append(",value);");
-                                if (prop.indexes().length > 0) {
-//                                    buffer.append("final " + classifier.fqn() + " self = this;\n");
-//                                    buffer.append("final DeferCounterSync waiterUnIndex = this.graph().newSyncCounter(" + prop.indexes().length + ");\n");
-//                                    buffer.append("final DeferCounterSync waiterIndex = this.graph().newSyncCounter(" + prop.indexes().length + ");\n");
-//
-//                                    for (KIndex index : prop.indexes()) {
-//                                        String queryParam = "";
-//                                        for (KProperty loopP : index.properties()) {
-//                                            if (!queryParam.isEmpty()) {
-//                                                queryParam += ",";
-//                                            }
-//                                            queryParam += loopP.name();
-//                                        }
-//                                        buffer.append("this.graph().unindex(")
-//                                                .append(name)
-//                                                .append("Model.IDX_")
-//                                                .append(index.fqn().toUpperCase())
-//                                                .append(",this,\"")
-//                                                .append(queryParam)
-//                                                .append("\",waiterUnIndex.wrap());");
-//                                    }
-//
-//                                    buffer.append("waiterUnIndex.then(new Job() {");
-//                                    buffer.append("@Override\n");
-//                                    buffer.append("public void run() {\n");
-//                                    buffer.append("self.setProperty(")
-//                                            .append(prop.name().toUpperCase())
-//                                            .append(", ")
-//                                            .append(prop.name().toUpperCase())
-//                                            .append("_TYPE")
-//                                            .append(", value);");
-//                                    for (KIndex index : prop.indexes()) {
-//                                        String queryParam = "";
-//                                        for (KProperty loopP : index.properties()) {
-//                                            if (!queryParam.isEmpty()) {
-//                                                queryParam += ",";
-//                                            }
-//                                            queryParam += loopP.name();
-//                                        }
-//                                        buffer.append("self.graph().index(")
-//                                                .append(name)
-//                                                .append("Model.IDX_")
-//                                                .append(index.fqn().toUpperCase())
-//                                                .append(",self,\"")
-//                                                .append(queryParam)
-//                                                .append("\",waiterIndex.wrap());");
-//                                    }
-//
-//                                    buffer.append("}\n});");
-//                                    buffer.append("waiterIndex.waitResult();\n");
+                                if(prop.indexes().length > 0) {
+                                    if(indexedProperties == null) {
+                                        indexedProperties = new StringBuilder();
+                                        indexName = prop.indexes()[0].fqn().toUpperCase();
+                                    } else {
+                                        indexedProperties.append(",");
+                                    }
+
+                                    indexedProperties.append(prop.name().toUpperCase());
 
                                 }
-                                buffer.append("return this;");
-                                setter.setBody(buffer.toString());
+
                             }
 
                         }
 
                     }
+                }
+
+                if(indexedProperties != null) {
+                    javaClass.addMethod()
+                            .setName("index" + classifier.name())
+                            .setVisibility(Visibility.PUBLIC)
+                            .setFinal(true)
+                            .setReturnTypeVoid()
+                            .setBody("final greycat.DeferCounterSync waiter = this.graph().newSyncCounter(1);\n" +
+                                    "\t\tfinal " + classifier.name() +" self = this;\n" +
+                                    "\t\tthis.graph().index(world(), time(), " + name + "Model.IDX_" + indexName + ", new greycat.Callback<greycat.NodeIndex>() {\n" +
+                                    "\t\t\t@Override\n" +
+                                    "\t\t\tpublic void on(greycat.NodeIndex indexNode) {\n" +
+                                    "\t\t\t\tindexNode.removeFromIndex(self, " + indexedProperties +" );\n" +
+                                    "\t\t\t\tindexNode.addToIndex(self," + indexedProperties +");\n" +
+                                    "\t\t\t\twaiter.count();\n" +
+                                    "\t\t\t}\n" +
+                                    "\t\t});\n" +
+                                    "\t\twaiter.waitResult();");
                 }
 
                 sources.add(javaClass);
@@ -623,7 +595,7 @@ public class Generator {
                         .setReturnType("greycat.Action")
                         .setVisibility(Visibility.PUBLIC)
                         .setStatic(true)
-                        .setBody("return greycat.internal.task.CoreActions.createTypedNode("+ classifier.pack() + "." + classifier.name() + ".NODE_NAME);");
+                        .setBody("return greycat.internal.task.CoreActions.createTypedNode("+ classifier.fqn() + ".NODE_NAME);");
 
                 for(Property property : ((Class) classifier).properties()) {
                     if(property instanceof Attribute) {
@@ -647,7 +619,7 @@ public class Generator {
                                 .setReturnType("greycat.Action")
                                 .setVisibility(Visibility.PUBLIC)
                                 .setStatic(true)
-                                .setBody("return greycat.internal.task.CoreActions.addVarToRelation(" + classifier.name() +"." + property.name().toUpperCase() + ",varName);")
+                                .setBody("return greycat.internal.task.CoreActions.addVarToRelation(" + classifier.fqn() +"." + property.name().toUpperCase() + ",varName);")
                                 .addParameter("String","varName");
 
                         taskAPI.addMethod()
@@ -655,7 +627,7 @@ public class Generator {
                                 .setReturnType("greycat.Action")
                                 .setVisibility(Visibility.PUBLIC)
                                 .setStatic(true)
-                                .setBody("return greycat.internal.task.CoreActions.traverse(" + classifier.name() +"." + property.name().toUpperCase() + ");");
+                                .setBody("return greycat.internal.task.CoreActions.traverse(" + classifier.fqn() +"." + property.name().toUpperCase() + ");");
                     }
                 }
             }
