@@ -30,7 +30,7 @@
     </modules>
 
     <properties>
-        <greycat.version>6-SNAPSHOT</greycat.version>
+        <greycat.version>7-SNAPSHOT</greycat.version>
     </properties>
 
     <licenses>

@@ -64,7 +64,6 @@ public class Generator {
     }
 
     public void generate(String name, File target) {
-
         boolean useML = false;
 
         sources = new ArrayList<JavaSource>();
@@ -74,7 +73,7 @@ public class Generator {
                 Enum loopEnum = (Enum) classifier;
                 final JavaEnumSource javaEnum = Roaster.create(JavaEnumSource.class);
                 if (classifier.pack() != null) {
-                    javaEnum.setPackage(classifier.pack());
+                    javaEnum.setPackage(classifier.pack().toLowerCase());
                 }
                 javaEnum.setName(classifier.name());
                 for (String literal : loopEnum.literals()) {
@@ -85,7 +84,7 @@ public class Generator {
                 final JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
                 Class loopClass = (Class) classifier;
                 if (classifier.pack() != null) {
-                    javaClass.setPackage(classifier.pack());
+                    javaClass.setPackage(classifier.pack().toLowerCase());
                 }
                 javaClass.setName(classifier.name());
 
@@ -186,7 +185,7 @@ public class Generator {
                             MethodSource<JavaClassSource> add = javaClass.addMethod();
                             add.setVisibility(Visibility.PUBLIC).setFinal(true);
                             add.setName(toCamelCase("addTo " + prop.name()));
-                            add.setReturnType(classifier.fqn());
+                            add.setReturnType(formatFqn(classifier));
                             add.addParameter(typeToClassName(prop.type()), "value");
                             bodyBuilder.append("super.addToRelation(").append(prop.name().toUpperCase()).append(",(greycat.Node)value);");
                             if(prop.parameters().get("opposite") != null) { //todo optimize
@@ -207,7 +206,7 @@ public class Generator {
                             MethodSource<JavaClassSource> remove = javaClass.addMethod();
                             remove.setVisibility(Visibility.PUBLIC).setFinal(true);
                             remove.setName(toCamelCase("removeFrom " + prop.name()));
-                            remove.setReturnType(classifier.fqn());
+                            remove.setReturnType(formatFqn(classifier));
                             remove.addParameter(typeToClassName(prop.type()), "value");
                             bodyBuilder.append("super.removeFromRelation(").append(prop.name().toUpperCase()).append(",(greycat.Node)value);");
                             if(prop.parameters().get("opposite") != null) { //todo optimize
@@ -269,12 +268,12 @@ public class Generator {
                                 MethodSource<JavaClassSource> setter = javaClass.addMethod();
                                 setter.setVisibility(Visibility.PUBLIC).setFinal(true);
                                 setter.setName(toCamelCase("set " + prop.name()));
-                                setter.setReturnType(classifier.fqn());
+                                setter.setReturnType(formatFqn(classifier));
                                 setter.addParameter(typeToClassName(prop.type()), "value");
 
                                 StringBuffer buffer = new StringBuffer();
                                 buffer.append(" final DeferCounterSync waiter = this.graph().newSyncCounter(1);\n" +
-                                        "        final " + classifier.fqn() + " selfPointer = this;\n" +
+                                        "        final " + formatFqn(classifier) + " selfPointer = this;\n" +
                                         "        this.relation(" + prop.name().toUpperCase() + ", new greycat.Callback<greycat.Node[]>() {\n" +
                                         "            @Override\n" +
                                         "            public void on(greycat.Node[] raw) {\n" +
@@ -311,7 +310,7 @@ public class Generator {
                                 javaClass.addMethod()
                                         .setVisibility(Visibility.PUBLIC).setFinal(true)
                                         .setName(toCamelCase("set " + prop.name()))
-                                        .setReturnType(classifier.fqn())
+                                        .setReturnType(formatFqn(classifier))
                                         .setBody("super.set(" + prop.name().toUpperCase() + ", " + prop.name().toUpperCase()
                                             + "_TYPE,value);\nreturn this;"
                                         )
@@ -366,7 +365,7 @@ public class Generator {
         pluginClass.addImport(NodeFactory.class);
         pluginClass.addImport(Graph.class);
         if (name.contains(".")) {
-            pluginClass.setPackage(name.substring(0, name.lastIndexOf('.')));
+            pluginClass.setPackage(name.substring(0, name.lastIndexOf('.')).toLowerCase());
             pluginClass.setName(name.substring(name.lastIndexOf('.') + 1) + "Plugin");
         } else {
             pluginClass.setName(name + "Plugin");
@@ -382,7 +381,7 @@ public class Generator {
         StringBuilder startBodyBuilder = new StringBuilder();
         for (Classifier classifier : model.classifiers()) {
             if (classifier instanceof Class) {
-                String fqn = classifier.fqn();
+                String fqn = formatFqn(classifier);
                 startBodyBuilder.append("\t\tgraph.nodeRegistry()\n")
                         .append("\t\t\t.getOrCreateDeclaration(").append(fqn).append(".NODE_NAME").append(")").append("\n")
                         .append("\t\t\t.setFactory(new NodeFactory() {\n" +
@@ -408,7 +407,7 @@ public class Generator {
         //Generate model
         final JavaClassSource modelClass = Roaster.create(JavaClassSource.class);
         if (name.contains(".")) {
-            modelClass.setPackage(name.substring(0, name.lastIndexOf('.')));
+            modelClass.setPackage(name.substring(0, name.lastIndexOf('.')).toLowerCase());
             modelClass.setName(name.substring(name.lastIndexOf('.') + 1) + "Model");
         } else {
             modelClass.setName(name + "Model");
@@ -494,14 +493,14 @@ public class Generator {
             if (classifier instanceof Class) {
                 MethodSource<JavaClassSource> loopNewMethod = modelClass.addMethod().setName(toCamelCase("new " + classifier.name()));
                 loopNewMethod.setVisibility(Visibility.PUBLIC).setFinal(true);
-                loopNewMethod.setReturnType(classifier.fqn());
+                loopNewMethod.setReturnType(formatFqn(classifier));
                 loopNewMethod.addParameter("long", "world");
                 loopNewMethod.addParameter("long", "time");
-                loopNewMethod.setBody("return (" + classifier.fqn() + ")this._graph.newTypedNode(world,time," + classifier.fqn() + ".NODE_NAME);");
+                loopNewMethod.setBody("return (" + formatFqn(classifier) + ")this._graph.newTypedNode(world,time," + formatFqn(classifier) + ".NODE_NAME);");
             }
             if (classifier instanceof Index) {
                 Index casted = (Index) classifier;
-                String resultType = casted.type().fqn();
+                String resultType = formatFqn(casted.type());
 
                 MethodSource<JavaClassSource> loopFindMethod = modelClass.addMethod().setName(toCamelCase("find " + classifier.name()));
                 loopFindMethod.setVisibility(Visibility.PUBLIC).setFinal(true);
@@ -565,7 +564,7 @@ public class Generator {
         // Generate Task API
         final JavaClassSource taskAPI = Roaster.create(JavaClassSource.class);
         if(name.contains(".")) {
-            taskAPI.setPackage(name.substring(0, name.lastIndexOf('.')) + ".task");
+            taskAPI.setPackage(name.substring(0, name.lastIndexOf('.')).toLowerCase() + ".task");
             taskAPI.setName(name.substring(name.lastIndexOf('.') + 1) + "TaskAPI");
         } else {
             taskAPI.setPackage("task");
@@ -594,7 +593,7 @@ public class Generator {
                         .setReturnType("greycat.Action")
                         .setVisibility(Visibility.PUBLIC)
                         .setStatic(true)
-                        .setBody("return greycat.internal.task.CoreActions.createTypedNode("+ classifier.fqn() + ".NODE_NAME);");
+                        .setBody("return greycat.internal.task.CoreActions.createTypedNode("+ formatFqn(classifier) + ".NODE_NAME);");
 
                 for(Property property : ((Class) classifier).properties()) {
                     if(property instanceof Attribute) {
@@ -603,7 +602,7 @@ public class Generator {
                                 .setReturnType("greycat.Action")
                                 .setVisibility(Visibility.PUBLIC)
                                 .setStatic(true)
-                                .setBody("return greycat.internal.task.CoreActions.setAttribute("+ classifier.fqn()+ "." + property.name().toUpperCase()+"," + classifier.fqn() +"." + property.name().toUpperCase() + "_TYPE," + property.name() + " + \"\");")
+                                .setBody("return greycat.internal.task.CoreActions.setAttribute("+ formatFqn(classifier) + "." + property.name().toUpperCase()+"," + formatFqn(classifier) +"." + property.name().toUpperCase() + "_TYPE," + property.name() + " + \"\");")
                                 .addParameter(String.class,property.name());
 
                         taskAPI.addMethod()
@@ -611,14 +610,14 @@ public class Generator {
                                 .setReturnType("greycat.Action")
                                 .setVisibility(Visibility.PUBLIC)
                                 .setStatic(true)
-                                .setBody("return greycat.internal.task.CoreActions.attribute(" + classifier.fqn() + "." + property.name().toUpperCase() +");");
+                                .setBody("return greycat.internal.task.CoreActions.attribute(" + formatFqn(classifier) + "." + property.name().toUpperCase() +");");
                     } else if(property instanceof Relation) {
                         taskAPI.addMethod()
                                 .setName("addTo" + classifier.name() + property.name().substring(0,1).toUpperCase() + property.name().substring(1))
                                 .setReturnType("greycat.Action")
                                 .setVisibility(Visibility.PUBLIC)
                                 .setStatic(true)
-                                .setBody("return greycat.internal.task.CoreActions.addVarToRelation(" + classifier.fqn() +"." + property.name().toUpperCase() + ",varName);")
+                                .setBody("return greycat.internal.task.CoreActions.addVarToRelation(" + formatFqn(classifier) +"." + property.name().toUpperCase() + ",varName);")
                                 .addParameter("String","varName");
 
                         taskAPI.addMethod()
@@ -626,7 +625,7 @@ public class Generator {
                                 .setReturnType("greycat.Action")
                                 .setVisibility(Visibility.PUBLIC)
                                 .setStatic(true)
-                                .setBody("return greycat.internal.task.CoreActions.traverse(" + classifier.fqn() +"." + property.name().toUpperCase() + ");");
+                                .setBody("return greycat.internal.task.CoreActions.traverse(" + formatFqn(classifier) +"." + property.name().toUpperCase() + ");");
                     }
                 }
 
@@ -642,17 +641,17 @@ public class Generator {
                 MethodSource first = functionSelect.addMethod()
                         .setName("select")
                         .setReturnType(boolean.class)
-                        .setBody("return select((" + classifier.fqn() + ")node,context);")
+                        .setBody("return select((" + formatFqn(classifier) + ")node,ctx);")
                         .setDefault(true);
                 first.addParameter("greycat.Node","node");
-                first.addParameter("greycat.TaskContext","context");
+                first.addParameter("greycat.TaskContext","ctx");
                 first.addAnnotation(Override.class);
 
                 MethodSource second = functionSelect.addMethod()
                         .setName("select")
                         .setReturnType(boolean.class);
-                second.addParameter(classifier.fqn(),classifier.name().toLowerCase());
-                second.addParameter("greycat.TaskContext","context");
+                second.addParameter(formatFqn(classifier),classifier.name().toLowerCase());
+                second.addParameter("greycat.TaskContext","ctx");
 
 
 
@@ -673,7 +672,7 @@ public class Generator {
                 StringBuilder indexedProperties = new StringBuilder();
                 Property[] properties = ((Index)classifier).properties();
                 for(int iIdxProp = 0; iIdxProp<properties.length; iIdxProp++) {
-                    indexedProperties.append(((Index) classifier).type().fqn())
+                    indexedProperties.append(formatFqn(((Index) classifier).type()))
                             .append(".")
                             .append(properties[iIdxProp].name().toUpperCase());
 
@@ -765,7 +764,19 @@ public class Generator {
             case Type.STRING:
                 return String.class.getCanonicalName();
         }
-        return mwgTypeName;
+        return formatTypeString(mwgTypeName);
+    }
+
+    private static String formatFqn(Classifier classifier) {
+        if(classifier.pack() != null) {
+            return classifier.pack().toLowerCase() + "." + classifier.name();
+        }
+        return classifier.name();
+    }
+
+    private static String formatTypeString(String type) {
+        int lastPoint = type.lastIndexOf(".");
+        return type.substring(0,lastPoint).toLowerCase() + type.substring(lastPoint);
     }
 
 
