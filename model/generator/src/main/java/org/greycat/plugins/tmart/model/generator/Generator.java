@@ -17,7 +17,11 @@ package org.greycat.plugins.tmart.model.generator;
 
 
 import greycat.*;
+import greycat.base.BaseNode;
+import greycat.internal.CoreDeferCounter;
+import greycat.plugin.Job;
 import greycat.plugin.NodeFactory;
+import greycat.struct.Buffer;
 import org.greycat.plugins.tmart.model.ast.*;
 import org.greycat.plugins.tmart.model.ast.Class;
 import org.greycat.plugins.tmart.model.ast.Enum;
@@ -414,7 +418,7 @@ public class Generator {
         }
         modelClass.addField().setName("_graph").setVisibility(Visibility.PRIVATE).setType(Graph.class).setFinal(true);
 
-        modelClass.addField().setName("PLANNED_WORLD").setVisibility(Visibility.PUBLIC).setType("long").setStatic(true);
+        modelClass.addField().setName("PLANNED_WORLD").setVisibility(Visibility.PUBLIC).setType("long").setStatic(true).setLiteralInitializer("greycat.Constants.NULL_LONG");
         modelClass.addField().setName("REAL_WORLD").setVisibility(Visibility.PUBLIC).setType("long").setStatic(true).setFinal(true).setLiteralInitializer("0");
 
         //add indexes name
@@ -685,12 +689,265 @@ public class Generator {
                         .setReturnType("greycat.Action")
                         .setVisibility(Visibility.PUBLIC)
                         .setStatic(true)
-                        .setBody("return greycat.internal.task.CoreActions.addToGlobalTimedIndex(" + name+ "Model.IDX_" + classifier.name().toUpperCase()+", " + indexedProperties + ");");
+                        .setBody("return greycat.internal.task.CoreActions.addToGlobalIndex(" + name+ "Model.IDX_" + classifier.name().toUpperCase()+", " + indexedProperties + ");");
 
             }
         }
 
+       taskAPI.addMethod()
+                .setName("getPlannedVersionNode")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(Action.class)
+                .setBody("return new ActionResolvedInOtherWorld(true);");
+
+        taskAPI.addMethod()
+                .setName("getRealVersionNode")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(Action.class)
+                .setBody("return new ActionResolvedInOtherWorld(false);");
+
         sources.add(taskAPI);
+
+        // Generate ActionResolvedInOtherWorld
+        final JavaClassSource actionResolvedPW = Roaster.create(JavaClassSource.class);
+        if(name.contains(".")) {
+            actionResolvedPW.setPackage(name.substring(0, name.lastIndexOf('.')).toLowerCase() + ".task");
+            actionResolvedPW.setName("ActionResolvedInOtherWorld");
+        } else {
+            actionResolvedPW.setPackage("task");
+            actionResolvedPW.setName("ActionResolvedInOtherWorld");
+        }
+
+        actionResolvedPW.addField()
+                .setName("getPlanned")
+                .setVisibility(Visibility.PRIVATE)
+                .setFinal(true)
+                .setType(boolean.class);
+
+        actionResolvedPW.addMethod()
+                .setConstructor(true)
+                .setVisibility(Visibility.PUBLIC)
+                .setBody("this.getPlanned = p_getPlanned;")
+                .addParameter(boolean.class,"p_getPlanned");
+
+        actionResolvedPW.addImport(Action.class);
+        actionResolvedPW.addImport(Callback.class);
+        actionResolvedPW.addImport(DeferCounter.class);
+        actionResolvedPW.addImport(Node.class);
+        actionResolvedPW.addImport(TaskContext.class);
+        actionResolvedPW.addImport(TaskResult.class);
+        actionResolvedPW.addImport(BaseNode.class);
+        actionResolvedPW.addImport(CoreDeferCounter.class);
+        actionResolvedPW.addImport(Job.class);
+        actionResolvedPW.addImport(Buffer.class);
+
+        actionResolvedPW.addInterface(Action.class);
+
+        MethodSource<JavaClassSource> evalMethod = actionResolvedPW.addMethod()
+                .setName("eval")
+                .setVisibility(Visibility.PUBLIC)
+                .setBody("final TaskResult previous = ctx.result();\n" +
+                        "        final TaskResult newRes = ctx.newResult();\n" +
+                        "        final long[] ids = new long[previous.size()];\n" +
+                        "        int nbElements = 0;\n" +
+                        "\n" +
+                        "        for(int i=0;i<previous.size();i++) {\n" +
+                        "            if(previous.get(i) instanceof BaseNode) {\n" +
+                        "                nbElements++;\n" +
+                        "                ids[i] = ((BaseNode) previous.get(i)).id();\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "\n" +
+                        "        final DeferCounter counter = new CoreDeferCounter(nbElements);\n" +
+                        "        final long world = (getPlanned)? " + name + "Model.PLANNED_WORLD : "+ name + "Model.REAL_WORLD;\n" +
+                        "        for(int i=0;i<nbElements;i++) {\n" +
+                        "            ctx.graph().lookup(world, ctx.time(), ids[i], new Callback<Node>() {\n" +
+                        "                @Override\n" +
+                        "                public void on(Node result) {\n" +
+                        "                    newRes.add(result);\n" +
+                        "                    counter.count();\n" +
+                        "                }\n" +
+                        "            });\n" +
+                        "        }\n" +
+                        "\n" +
+                        "        counter.then(new Job() {\n" +
+                        "            @Override\n" +
+                        "            public void run() {\n" +
+                        "                ctx.continueWith(newRes);\n" +
+                        "            }\n" +
+                        "        });");
+        evalMethod.addParameter(TaskContext.class,"ctx");
+        evalMethod.addAnnotation(Override.class);
+
+        MethodSource<JavaClassSource> serializeMethod = actionResolvedPW.addMethod()
+                .setName("serialize")
+                .setVisibility(Visibility.PUBLIC)
+                .setBody("//todo");
+        serializeMethod.addParameter(Buffer.class,"builder");
+        serializeMethod.addAnnotation(Override.class);
+
+        sources.add(actionResolvedPW);
+
+        // Generate Time Helper
+        final JavaClassSource timeHelper = Roaster.create(JavaClassSource.class);
+        if(name.contains(".")) {
+            timeHelper.setPackage(name.substring(0, name.lastIndexOf('.')).toLowerCase() + ".time");
+            timeHelper.setName(name.substring(name.lastIndexOf('.') + 1) + "TimeHelper");
+        } else {
+            timeHelper.setPackage("time");
+            timeHelper.setName(name + "TimeHelper");
+        }
+
+
+        timeHelper.addField()
+                .setName("ONE_SECOND")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setType(long.class)
+                .setLiteralInitializer("1000");
+        timeHelper.addField()
+                .setName("ONE_MINUTE")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setType(long.class)
+                .setLiteralInitializer("60 * ONE_SECOND");
+        timeHelper.addField()
+                .setName("ONE_HOUR")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setType(long.class)
+                .setLiteralInitializer("60 * ONE_MINUTE");
+        timeHelper.addField()
+                .setName("ONE_DAY")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setType(long.class)
+                .setLiteralInitializer("24 * ONE_HOUR");
+
+
+        timeHelper.addMethod()
+                .setName("seconds")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return nb * ONE_SECOND;")
+                .addParameter(int.class,"nb");
+        timeHelper.addMethod()
+                .setName("minutes")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return nb * ONE_MINUTE;")
+                .addParameter(int.class,"nb");
+        timeHelper.addMethod()
+                .setName("hours")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return nb * ONE_HOUR;")
+                .addParameter(int.class,"nb");
+        timeHelper.addMethod()
+                .setName("days")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return nb * ONE_DAY;")
+                .addParameter(int.class,"nb");
+
+        MethodSource nextSeconds = timeHelper.addMethod()
+                .setName("nextSeconds")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current + seconds(nb);");
+        nextSeconds.addParameter(long.class,"current");
+        nextSeconds.addParameter(int.class,"nb");
+
+        MethodSource prevSeconds = timeHelper.addMethod()
+                .setName("prevSeconds")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current - seconds(nb);");
+        prevSeconds.addParameter(long.class,"current");
+        prevSeconds.addParameter(int.class,"nb");
+
+        MethodSource nextMinutes = timeHelper.addMethod()
+                .setName("nextMinutes")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current + minutes(nb);");
+        nextMinutes.addParameter(long.class,"current");
+        nextMinutes.addParameter(int.class,"nb");
+
+        MethodSource prevMinutes = timeHelper.addMethod()
+                .setName("prevMinutes")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current - minutes(nb);");
+        prevMinutes.addParameter(long.class,"current");
+        prevMinutes.addParameter(int.class,"nb");
+
+        MethodSource nextHours = timeHelper.addMethod()
+                .setName("nextHours")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current + hours(nb);");
+        nextHours.addParameter(long.class,"current");
+        nextHours.addParameter(int.class,"nb");
+
+        MethodSource prevHours = timeHelper.addMethod()
+                .setName("prevHours")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current - hours(nb);");
+        prevHours.addParameter(long.class,"current");
+        prevHours.addParameter(int.class,"nb");
+
+        MethodSource nextDays = timeHelper.addMethod()
+                .setName("nextDays")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current + days(nb);");
+        nextDays.addParameter(long.class,"current");
+        nextDays.addParameter(int.class,"nb");
+
+        MethodSource prevDays = timeHelper.addMethod()
+                .setName("prevDays")
+                .setVisibility(Visibility.PUBLIC)
+                .setStatic(true)
+                .setFinal(true)
+                .setReturnType(long.class)
+                .setBody("return current - days(nb);");
+        prevDays.addParameter(long.class,"current");
+        prevDays.addParameter(int.class,"nb");
+
+        sources.add(timeHelper);
+
 
 
 
