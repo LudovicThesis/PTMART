@@ -796,10 +796,10 @@ public class Generator {
         final JavaClassSource timeHelper = Roaster.create(JavaClassSource.class);
         if(name.contains(".")) {
             timeHelper.setPackage(name.substring(0, name.lastIndexOf('.')).toLowerCase() + ".time");
-            timeHelper.setName(name.substring(name.lastIndexOf('.') + 1) + "TimeHelper");
+            timeHelper.setName("TimeHelper");
         } else {
             timeHelper.setPackage("time");
-            timeHelper.setName(name + "TimeHelper");
+            timeHelper.setName("TimeHelper");
         }
 
 
