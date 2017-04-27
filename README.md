@@ -1,5 +1,5 @@
-# TMART
-Temporal Model@Run.time, a GreyCat plugin
+# PT{M@RT}
+Parallel Temporal Model@Run.time, a GreyCat plugin
 
 The `model` module is a fork of the [GreyCat model plugin](https://github.com/datathings/greycat/tree/master/plugins/model2).
 

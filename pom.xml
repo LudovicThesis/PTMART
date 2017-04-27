@@ -40,6 +40,12 @@
         </license>
     </licenses>
 
+    <scm>
+        <connection>scm:git:git@github.com:LudovicThesis/PTMART.git</connection>
+        <developerConnection>scm:git:git@github.com:LudovicThesis/PTMART.git</developerConnection>
+        <url>https://github.com/LudovicThesis/PTMART</url>
+    </scm>
+
 
     <build>
         <plugins>
@@ -77,6 +83,12 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
             </plugin>
         </plugins>
     </build>
